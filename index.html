@@ -880,14 +880,45 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- Life cycle -->
-    <div class="section-card">
-      <div class="section-header"><div class="section-title">Life cycle</div></div>
+    <!-- Life cycle: period lengths and key dates. Drawdown timing (Module 2) is counted from these. -->
+    <div class="section-card" id="lifecycle-card">
+      <div class="section-header">
+        <div class="section-title">Life cycle</div>
+      </div>
       <div class="section-body">
-        <div style="text-align:center;padding:24px 0;">
-          <div style="font-size:28px;color:#D1D5DB;margin-bottom:8px;">🔒</div>
-          <div style="font-size:13px;font-weight:500;color:#374151;margin-bottom:2px;">Life cycle</div>
-          <div style="font-size:12px;color:#9CA3AF;">TBD</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
+          <div>
+            <label class="form-label">Revolving Period (Months)</label>
+            <input type="number" min="0" class="form-input" id="lc-rev-months" value="24" placeholder="e.g. 24" oninput="lcRecalc()" />
+          </div>
+          <div>
+            <label class="form-label">Amortisation Period (Months) <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">Wind-down period after the revolving period ends.</span></span></label>
+            <input type="number" min="0" class="form-input" id="lc-amort-months" value="24" placeholder="e.g. 24" oninput="lcRecalc()" />
+          </div>
+          <div>
+            <label class="form-label">Initial Cutoff Date</label>
+            <input type="date" class="form-input" id="lc-initial-cutoff" value="2026-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" style="margin-top:4px;">Start of the revolving period. Revolving End, Amortisation End and drawdown timing follow this date.</div>
+          </div>
+          <div>
+            <label class="form-label">Closing Date</label>
+            <input type="date" class="form-input" id="lc-closing" value="2026-10-15" />
+            <div class="form-hint" style="margin-top:4px;">Optional at onboarding. It often changes, and can be edited until a batch with tag NORMAL exists.</div>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:4px;">
+          <div>
+            <div class="view-label" style="margin-bottom:4px;">Revolving End</div>
+            <div id="lc-rev-end" style="font-size:14px;font-weight:600;color:#111827;">—</div>
+            <div class="form-hint">Initial Cutoff Date + Revolving Period</div>
+          </div>
+          <div>
+            <div class="view-label" style="margin-bottom:4px;">Amortisation End</div>
+            <div id="lc-amort-end" style="font-size:14px;font-weight:600;color:#111827;">—</div>
+            <div class="form-hint">Revolving End + Amortisation Period</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1199,6 +1230,36 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             </tr>
           </tbody>
         </table>
+
+        <!-- Drawdown Schedule: when the funder draws down the issued pool (a specific date for each drawdown) -->
+        <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;">Drawdown Schedule</div>
+          <button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ddAdd()">+ Add drawdown</button>
+        </div>
+        <div class="form-hint" style="margin-bottom:12px;">The date on which the funder draws down each amount of the issued pool. Dates must fall within the revolving period (Initial Cutoff Date to Revolving End in Basic Info → Life cycle) and amounts must add up to the issued pool size.</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#F9FAFB;">
+              <th style="width:44px;padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">#</th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Date</th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Amount (USD'm)</th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">% of Pool</th>
+              <th style="width:60px;border-bottom:1px solid #E5E7EB;"></th>
+            </tr>
+          </thead>
+          <tbody id="dd-tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td></td>
+              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total drawn</td>
+              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-val">0 USD'm</td>
+              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-pct">0%</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <div id="dd-status" style="font-size:12px;font-weight:500;margin-top:6px;padding-left:14px;"></div>
       </div>
     </div>
 
@@ -1821,6 +1882,12 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div class="rv-row"><span class="rv-label">Clawback AR · Task ID</span><span class="rv-value">AR-2024-00456</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Task Name</span><span class="rv-value">Clawback AR Task</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Transify Key</span><span class="rv-value">clawback_ar_send</span></div>
+          <div class="rv-row"><span class="rv-label">Revolving Period</span><span class="rv-value">24 months</span></div>
+          <div class="rv-row"><span class="rv-label">Amortisation Period</span><span class="rv-value">24 months</span></div>
+          <div class="rv-row"><span class="rv-label">Initial Cutoff Date</span><span class="rv-value">1 Nov 2026</span></div>
+          <div class="rv-row"><span class="rv-label">Closing Date</span><span class="rv-value">15 Oct 2026</span></div>
+          <div class="rv-row"><span class="rv-label">Revolving End</span><span class="rv-value">1 Nov 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Amortisation End</span><span class="rv-value">1 Nov 2030</span></div>
           <div class="rv-row" style="align-items:flex-start;">
             <span class="rv-label" style="padding-top:4px;">Supported Tenors</span>
             <div style="display:flex;flex-wrap:wrap;gap:5px;">
@@ -1913,6 +1980,19 @@ tr.drag-over { border-top: 2px solid #2563EB; }
                   <tr><td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#1D4ED8;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">S</span>Senior tranche</span></td><td>107</td><td>73.79%</td><td><span style="color:#16A34A;font-size:12px;">● On</span></td></tr>
                   <tr><td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:20px;height:20px;border-radius:50%;background:#16A34A;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">J</span>Junior tranche</span></td><td>38.00</td><td>26.21%</td><td><span style="color:#9CA3AF;font-size:12px;">● Off</span></td></tr>
                   <tr style="font-weight:700;"><td>Total</td><td style="color:#2563EB;">145</td><td style="color:#2563EB;">100%</td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="rv-row" style="align-items:flex-start;">
+            <span class="rv-label" style="padding-top:2px;">Drawdown Schedule</span>
+            <div style="flex:1;">
+              <table class="rv-table">
+                <thead><tr><th>Drawdown</th><th style="width:170px;">Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
+                <tbody>
+                  <tr><td>1</td><td>1 Nov 2026</td><td>70</td><td>48.28%</td></tr>
+                  <tr><td>2</td><td>1 Jan 2027</td><td>75</td><td>51.72%</td></tr>
+                  <tr style="font-weight:700;"><td>Total</td><td></td><td style="color:#2563EB;">145</td><td style="color:#2563EB;">100%</td></tr>
                 </tbody>
               </table>
             </div>
@@ -2736,11 +2816,15 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           </div>
           <div id="vi-lifecycle-body">
             <div class="view-section-body">
-              <div class="empty-state-sm">
-                <div style="font-size:28px;color:#D1D5DB;margin-bottom:8px;">🔒</div>
-                <div style="font-size:13px;font-weight:500;color:#374151;margin-bottom:2px;">Life cycle</div>
-                <div style="font-size:12px;color:#9CA3AF;">TBD</div>
+              <div class="view-grid">
+                <div class="view-field"><span class="view-label">Revolving Period (Months)</span><span class="view-value">24</span></div>
+                <div class="view-field"><span class="view-label">Amortisation Period (Months)</span><span class="view-value">24</span></div>
+                <div class="view-field"><span class="view-label">Initial Cutoff Date</span><span class="view-value">1 Nov 2026</span></div>
+                <div class="view-field"><span class="view-label">Closing Date</span><span class="view-value">15 Oct 2026</span></div>
+                <div class="view-field"><span class="view-label">Revolving End</span><span class="view-value">1 Nov 2028</span></div>
+                <div class="view-field"><span class="view-label">Amortisation End</span><span class="view-value">1 Nov 2030</span></div>
               </div>
+              <div class="form-hint" style="margin-top:12px;">Closing Date can be edited until a batch with tag NORMAL exists. Changes go through a ticket.</div>
             </div>
           </div>
         </div>
@@ -5370,6 +5454,34 @@ function selectDisc(card) {
   }
 }
 
+/* ── Life cycle (Module 1): revolving + amortisation periods and derived end dates ── */
+function lcAddMonths(iso, n) {
+  const p = iso.split('-').map(Number);
+  const last = new Date(p[0], p[1] - 1 + n + 1, 0).getDate();   // clamp 31st to a shorter month
+  return new Date(p[0], p[1] - 1 + n, Math.min(p[2], last));
+}
+function lcFmt(d) {
+  return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
+}
+function lcRecalc() {
+  const val = id => (document.getElementById(id) || {}).value || '';
+  const rev = parseInt(val('lc-rev-months'), 10) || 0;
+  const amort = parseInt(val('lc-amort-months'), 10) || 0;
+  const closing = val('lc-initial-cutoff');   // the revolving period is counted from the Initial Cutoff Date
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  const revEnd = closing && rev > 0 ? lcAddMonths(closing, rev) : null;
+  const amortEnd = closing && rev > 0 && amort > 0 ? lcAddMonths(closing, rev + amort) : null;
+  set('lc-rev-end', revEnd ? lcFmt(revEnd) : '—');
+  set('lc-amort-end', amortEnd ? lcFmt(amortEnd) : '—');
+  if (typeof ddUpdate === 'function') ddUpdate();   // drawdown dates and checks depend on these values
+}
+function lcParse(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function lcIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+/* Drawdown Schedule initial data and first render (functions are defined with Issue Size auto-calc below) */
+let DRAWDOWNS = [{ date: '2026-11-01', amt: 70 }, { date: '2027-01-01', amt: 75 }];
+lcRecalc();
+ddRender();
+
 function selectPricing(card) {
   document.querySelectorAll('.radio-card').forEach(c => {
     c.classList.remove('selected');
@@ -6683,6 +6795,88 @@ function isRecalc() {
   if (usdInput) usdInput.value = ticketUSD;
   const countInput = document.getElementById('is-loan-count-input');
   if (countInput) countInput.value = loanCount;
+  if (typeof ddUpdate === 'function') ddUpdate();
+}
+
+/* ── Drawdown Schedule (Module 2 · Issue size) ──
+   Each drawdown has a specific date, checked against the revolving period in Basic Info → Life cycle. */
+/* DRAWDOWNS is declared and first rendered earlier in this script (next to the Discounting Setting code),
+   because the legacy milestone drag-and-drop block further down throws at load and stops anything after it. */
+function ddRender() {
+  const tbody = document.getElementById('dd-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = DRAWDOWNS.map((d, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
+      <td style="padding:12px 14px;font-size:12px;color:#9CA3AF;">${i + 1}</td>
+      <td style="padding:12px 14px;"><div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;flex-wrap:wrap;">
+        <input type="date" class="form-input" value="${d.date}" style="width:160px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
+      <td style="padding:12px 14px;"><div style="display:flex;gap:0;align-items:center;">
+        <input type="number" min="0" value="${d.amt}" class="form-input" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddSet(${i},'amt',this)" />
+        <span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div></td>
+      <td style="padding:12px 14px;font-size:13px;color:#374151;" id="dd-pct-${i}">0%</td>
+      <td style="padding:12px 14px;"><button class="tbl-act-link" style="color:${DRAWDOWNS.length > 1 ? '#DC2626' : '#D1D5DB'};" ${DRAWDOWNS.length > 1 ? '' : 'disabled'} onclick="ddRemove(${i})">Remove</button></td>
+    </tr>`).join('');
+  ddUpdate();
+}
+
+function ddSet(i, field, el) {
+  DRAWDOWNS[i][field] = field === 'date' ? el.value : (parseFloat(el.value) || 0);
+  ddUpdate();
+}
+function ddAdd() {
+  // the next drawdown starts one month after the last one (or at the Initial Cutoff Date)
+  const last = DRAWDOWNS[DRAWDOWNS.length - 1];
+  const start = (document.getElementById('lc-initial-cutoff') || {}).value || '';
+  const next = last && last.date ? lcIso(lcAddMonths(last.date, 1)) : start;
+  DRAWDOWNS.push({ date: next, amt: 0 });
+  ddRender();
+}
+function ddRemove(i) {
+  if (DRAWDOWNS.length <= 1) return;
+  DRAWDOWNS.splice(i, 1);
+  ddRender();
+}
+function ddUpdate() {
+  const pool = parseFloat((document.getElementById('is-pool-size') || {}).value) || 0;
+  const sum = DRAWDOWNS.reduce((s, d) => s + d.amt, 0);
+  DRAWDOWNS.forEach((d, i) => {
+    const el = document.getElementById('dd-pct-' + i);
+    if (el) el.textContent = (pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00') + '%';
+  });
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('dd-total-val', (Math.round(sum * 100) / 100) + " USD'm");
+  set('dd-total-pct', (pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00') + '%');
+  const diff = Math.round((pool - sum) * 100) / 100;
+  const dates = DRAWDOWNS.map(d => d.date);
+  const filled = dates.every(x => x);
+  const ordered = filled && dates.every((x, i) => i === 0 || x > dates[i - 1]);
+  let msg, color;
+  if (diff === 0) { msg = '✓ Drawdowns add up to the issued pool size'; color = '#16A34A'; }
+  else if (diff > 0) { msg = '⚠ ' + diff + " USD'm of the issued pool is not scheduled yet"; color = '#D97706'; }
+  else { msg = '✗ Drawdowns exceed the issued pool size by ' + Math.abs(diff) + " USD'm"; color = '#DC2626'; }
+  // Each date must fall inside the revolving period set in Basic Info → Life cycle (Initial Cutoff Date to Revolving End)
+  const start = (document.getElementById('lc-initial-cutoff') || {}).value || '';
+  const rev = parseInt((document.getElementById('lc-rev-months') || {}).value, 10) || 0;
+  const revEnd = start && rev > 0 ? lcIso(lcAddMonths(start, rev)) : '';
+  const outside = [];
+  DRAWDOWNS.forEach((d, i) => {
+    const el = document.getElementById('dd-date-' + i);
+    let text = '', bad = false;
+    if (!d.date) text = '';
+    else if (!start) text = 'set Initial Cutoff Date in Basic Info';
+    else if (d.date < start) { text = 'before the Initial Cutoff Date'; bad = true; }
+    else if (revEnd && d.date > revEnd) { text = 'after Revolving End (' + lcFmt(lcParse(revEnd)) + ')'; bad = true; }
+    else text = '';
+    if (bad) outside.push(i + 1);
+    if (el) { el.textContent = text; el.style.color = bad ? '#DC2626' : '#9CA3AF'; }
+  });
+  const st = document.getElementById('dd-status');
+  if (st) {
+    st.style.color = color;
+    st.textContent = msg
+      + (!filled ? ' · Choose a date for every drawdown' : (ordered ? '' : ' · Drawdown dates must be in ascending order'))
+      + (outside.length ? ' · Drawdown ' + outside.join(', ') + ' falls outside the revolving period' : '');
+    if (!filled || !ordered || outside.length) st.style.color = '#DC2626';
+  }
 }
 
 /* ── Basic Info step validation ── */
