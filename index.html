@@ -2833,24 +2833,17 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           </div>
         </div>
 
-        <!-- Life cycle -->
+        <!-- Life cycle (live funder): view, and edit through a ticket -->
         <div class="view-section">
           <div class="view-section-hd" style="cursor:pointer;" onclick="toggleAccordion('vi-lifecycle-body');this.querySelector('.vi-chev').classList.toggle('collapsed')">
             <span class="view-section-title">Life cycle</span>
-            <span class="vi-chev" style="font-size:16px;color:#6B7280;transition:transform 0.2s;">▲</span>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span id="lc-live-actions"></span>
+              <span class="vi-chev" style="font-size:16px;color:#6B7280;transition:transform 0.2s;">▲</span>
+            </div>
           </div>
           <div id="vi-lifecycle-body">
-            <div class="view-section-body">
-              <div class="view-grid">
-                <div class="view-field"><span class="view-label">Revolving Period (Months)</span><span class="view-value">24</span></div>
-                <div class="view-field"><span class="view-label">Amortisation Period (Months)</span><span class="view-value">24</span></div>
-                <div class="view-field"><span class="view-label">Initial Cutoff Date</span><span class="view-value">1 Nov 2026</span></div>
-                <div class="view-field"><span class="view-label">Closing Date</span><span class="view-value">15 Oct 2026</span></div>
-                <div class="view-field"><span class="view-label">Revolving End</span><span class="view-value">1 Nov 2028</span></div>
-                <div class="view-field"><span class="view-label">Amortisation End</span><span class="view-value">1 Nov 2030</span></div>
-              </div>
-              <div class="form-hint" style="margin-top:12px;">Closing Date can be edited until a batch with tag NORMAL exists. Changes go through a ticket.</div>
-            </div>
+            <div class="view-section-body" id="lc-live-body"></div>
           </div>
         </div>
         <div class="view-footer">
@@ -5534,10 +5527,17 @@ const EC_OPS = ['<=', '>=', '<', '>', '=', '≠', 'in', 'between'];
 let ECPC_VAL = {};
 ECPC_CATALOG.forEach(c => { if (c.def) ECPC_VAL[c.code] = Object.assign({ v2: '' }, c.def); });
 let ecLibType = 'EC', ecLibPick = new Set();   // Rule library modal state
+let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live' = Lender Detail
+let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
+let ecLiveRemoved = new Set();                   // existing rules marked for removal, not yet submitted
+/* Life cycle of the live funder (Lender Detail) */
+let LC_LIVE = { rev: 24, amort: 24, cutoff: '2026-11-01', closing: '2026-10-15' };
+let lcLiveEdit = false, lcLiveDraft = null, LC_HAS_NORMAL = false;   // LC_HAS_NORMAL: a batch with tag NORMAL exists
 let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
 let ecLiveEdit = false, ecLiveDraft = null;
 ecRender();
 ecLiveRender();
+lcLiveRender();
 
 function selectPricing(card) {
   document.querySelectorAll('.radio-card').forEach(c => {
@@ -6998,10 +6998,12 @@ function ecUpdate() {
   }
   ecRenderReview();
 }
-function ecGroupHtml(type, rows, valueCell) {
+function ecGroupHtml(type, rows, valueCell, opts) {
+  opts = opts || {};
   const title = type === 'EC' ? 'Eligibility Criteria (EC)' : 'Portfolio Criteria (PC)';
-  return `<div class="ec-sub-title" style="margin:12px 0 6px;">${title}</div>` + (rows.length
-    ? `<table class="rv-table"><thead><tr><th style="width:90px;">Code</th><th>Name</th><th style="width:80px;">Level</th><th style="width:420px;">Value</th></tr></thead><tbody>${rows.map(c => `<tr><td><span class="ec-code">${c.code}</span></td><td>${c.name}</td><td>${c.level}</td><td>${valueCell(c)}</td></tr>`).join('')}</tbody></table>`
+  const add = opts.addMode ? `<button class="btn-outline-sm" style="padding:5px 12px;font-size:12px;" onclick="ecLibOpen('${type}','${opts.addMode}')">+ Add ${type}</button>` : '';
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;"><div class="ec-sub-title">${title}</div>${add}</div>` + (rows.length
+    ? `<table class="rv-table"><thead><tr><th style="width:90px;">Code</th><th>Name</th><th style="width:80px;">Level</th><th style="width:420px;">Value</th></tr></thead><tbody>${rows.map(c => `<tr><td><span class="ec-code">${c.code}</span></td><td>${c.name}${opts.tag ? opts.tag(c) : ''}</td><td>${c.level}</td><td>${valueCell(c)}</td></tr>`).join('')}</tbody></table>`
     : `<div style="font-size:13px;color:#9CA3AF;padding:4px 0;">No ${type} added</div>`);
 }
 function ecRenderReview() {
@@ -7011,9 +7013,9 @@ function ecRenderReview() {
   el.innerHTML = ecGroupHtml('EC', ecSelected('EC'), cell) + ecGroupHtml('PC', ecSelected('PC'), cell);
 }
 
-/* Rule library: pick rules of one type, Save adds them to the section */
-function ecLibOpen(t) {
-  ecLibType = t; ecLibPick = new Set();
+/* Rule library: pick rules of one type, Save adds them (to the funder being onboarded, or to the live funder in Lender Detail) */
+function ecLibOpen(t, mode) {
+  ecLibType = t; ecLibPick = new Set(); ecLibMode = mode || 'onboard';
   document.getElementById('ec-lib-title').textContent = t + ' Library';
   document.getElementById('ec-lib-search').value = '';
   ecLibRender();
@@ -7022,9 +7024,10 @@ function ecLibOpen(t) {
 function ecLibClose() { document.getElementById('ec-lib-modal').classList.remove('open'); }
 function ecLibRender() {
   const q = document.getElementById('ec-lib-search').value.trim().toLowerCase();
+  const have = ecLibMode === 'live' ? (ecLiveEdit ? ecLiveDraft : ECPC_LIVE) : ECPC_VAL;
   const rows = ECPC_CATALOG.filter(c => c.type === ecLibType && (!q || (c.code + ' ' + c.name).toLowerCase().includes(q)));
   document.getElementById('ec-lib-tbody').innerHTML = rows.length ? rows.map(c => {
-    const added = c.code in ECPC_VAL, picked = ecLibPick.has(c.code);
+    const added = c.code in have, picked = ecLibPick.has(c.code);
     return `<tr style="border-bottom:1px solid #F3F4F6;">
       <td class="ec-td" style="padding-left:28px;"><span class="ec-code">${c.code}</span></td>
       <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
@@ -7039,14 +7042,23 @@ function ecLibRender() {
 function ecLibToggle(code) { if (ecLibPick.has(code)) ecLibPick.delete(code); else ecLibPick.add(code); ecLibRender(); }
 function ecLibSave() {
   const added = ECPC_CATALOG.filter(c => ecLibPick.has(c.code));
-  added.forEach(c => { ECPC_VAL[c.code] = { op: c.op, v1: '', v2: '' }; });   // starts with the rule's usual operator
   ecLibClose();
+  if (ecLibMode === 'live') {
+    // adding to a live funder opens the edit state, so the new rules get a value before the ticket is submitted
+    if (!ecLiveEdit) { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; }
+    added.forEach(c => { ecLiveDraft[c.code] = { op: c.op, v1: '', v2: '' }; ecLiveNew.add(c.code); });
+    ecLiveRender();
+    if (added.length) { const el = document.getElementById('ecl-val-' + added[0].code); if (el) el.focus(); }
+    return;
+  }
+  added.forEach(c => { ECPC_VAL[c.code] = { op: c.op, v1: '', v2: '' }; });   // starts with the rule's usual operator
   ecRender();
   if (added.length) { const el = document.getElementById('ec-val-' + added[0].code); if (el) el.focus(); }
 }
 
 /* ── EC / PC Rules (Lender Detail, live funder) ──
-   After go-live the list of rules is fixed. Only values on BD's changeable list can be edited, and an edit goes to the Ticket Center. */
+   After go-live rules can be added and removed, and values on BD's changeable list can be edited. A new rule needs a value.
+   A removed rule stays struck through (with Undo) until the change is submitted. Submitting goes to the Ticket Center. */
 function ecLiveRender() {
   const actions = document.getElementById('ecpc-live-actions');
   const body = document.getElementById('ecpc-live-body');
@@ -7057,26 +7069,122 @@ function ecLiveRender() {
   const src = ecLiveEdit ? ecLiveDraft : ECPC_LIVE;
   const rows = ECPC_CATALOG.filter(c => c.code in src);
   const hint = ecLiveEdit
-    ? '🔒 marks a rule that is not on the changeable list, so its value cannot be edited after go-live. Changes need maker/checker approval.'
-    : 'The list of rules is fixed after go-live. Values on the changeable list can be edited; changes need maker/checker approval.';
-  const cell = c => ecLiveEdit && c.live
-    ? ecValueHtml(c, src[c.code], 'ecLiveSetPart', 'ecl')
-    : `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>${ecLiveEdit ? ' <span title="Not on the changeable list" style="margin-left:6px;">🔒</span>' : ''}`;
-  body.innerHTML = `<div class="form-hint" style="margin-bottom:4px;">${hint}</div>`
-    + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell);
+    ? '🔒 marks a rule whose value is not on the changeable list, so it cannot be edited after go-live (it can still be removed). New rules need a value. Changes need maker/checker approval.'
+    : 'You can add or remove EC and PC rules after go-live. Existing values can be edited if they are on the changeable list. Changes need maker/checker approval.';
+  const cell = c => {
+    const isNew = ecLiveNew.has(c.code), gone = ecLiveRemoved.has(c.code);
+    let inner;
+    if (gone) inner = `<span class="ec-code" style="text-decoration:line-through;color:#9CA3AF;">${ecEsc(ecFmt(src[c.code]))}</span>`;
+    else if (ecLiveEdit && (c.live || isNew)) inner = ecValueHtml(c, src[c.code], 'ecLiveSetPart', 'ecl');
+    else inner = `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>${ecLiveEdit ? ' <span title="Not on the changeable list" style="margin-left:6px;">🔒</span>' : ''}`;
+    if (!ecLiveEdit) return inner;
+    const act = gone
+      ? `<button class="tbl-act-link" onclick="ecLiveUndo('${c.code}')">Undo</button>`
+      : `<button class="tbl-act-link" style="color:#DC2626;" onclick="ecLiveRemove('${c.code}')">Remove</button>`;
+    return `<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;">${inner}</div>${act}</div>`;
+  };
+  const opts = { addMode: 'live', tag: c => ecLiveRemoved.has(c.code)
+    ? ' <span class="ec-type EC" style="margin-left:6px;background:#FEE2E2;color:#DC2626;">Removed</span>'
+    : (ecLiveNew.has(c.code) ? ' <span class="ec-type EC" style="margin-left:6px;background:#DCFCE7;color:#16A34A;">New</span>' : '') };
+  body.innerHTML = `<div class="form-hint" style="margin-bottom:0;">${hint}</div>`
+    + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell, opts) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell, opts);
 }
 function ecLiveSetPart(code, part, val) { ecLiveDraft[code][part] = val; if (part === 'op') ecLiveRender(); }
+function ecLiveDiscard(code) { delete ecLiveDraft[code]; ecLiveNew.delete(code); ecLiveRender(); }
+function ecLiveRemove(code) { if (ecLiveNew.has(code)) ecLiveDiscard(code); else { ecLiveRemoved.add(code); ecLiveRender(); } }
+function ecLiveUndo(code) { ecLiveRemoved.delete(code); ecLiveRender(); }
 function ecLiveStart() { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; ecLiveRender(); }
-function ecLiveCancel() { ecLiveEdit = false; ecLiveDraft = null; ecLiveRender(); }
+function ecLiveCancel() { ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set(); ecLiveRender(); }
 function ecLiveSave() {
-  const changed = Object.keys(ecLiveDraft).filter(k => ecFmt(ecLiveDraft[k]) !== ecFmt(ECPC_LIVE[k]));
-  const empty = Object.keys(ecLiveDraft).some(k => ecMissing(ecLiveDraft[k]));
+  const keep = Object.keys(ecLiveDraft).filter(k => !ecLiveRemoved.has(k));
+  const changed = keep.filter(k => !(k in ECPC_LIVE) || ecFmt(ecLiveDraft[k]) !== ecFmt(ECPC_LIVE[k]));
+  const nNew = changed.filter(k => !(k in ECPC_LIVE)).length, nGone = ecLiveRemoved.size;
+  const total = changed.length + nGone;
   const toast = document.getElementById('update-toast');
   const say = t => { if (toast) { toast.textContent = t; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); } };
-  if (empty) { say('✗ Every rule needs a value'); return; }
-  ECPC_LIVE = ecLiveDraft; ecLiveEdit = false; ecLiveDraft = null;
+  if (keep.some(k => ecMissing(ecLiveDraft[k]))) { say('✗ Every rule needs a value'); return; }
+  const next = {}; keep.forEach(k => { next[k] = ecLiveDraft[k]; });
+  ECPC_LIVE = next; ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set();
   ecLiveRender();
-  say(changed.length ? '✓ ' + changed.length + ' EC / PC value change' + (changed.length > 1 ? 's' : '') + ' submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit');
+  const detail = [nNew ? nNew + ' new' : '', nGone ? nGone + ' removed' : ''].filter(Boolean).join(', ');
+  say(total ? '✓ ' + total + ' EC / PC change' + (total > 1 ? 's' : '') + (detail ? ' (' + detail + ')' : '') + ' submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit');
+}
+
+/* ── Life cycle (Lender Detail, live funder) ──
+   Periods, Initial Cutoff Date and Closing Date can be edited; the end dates are calculated. Closing Date is locked once a batch
+   with tag NORMAL exists. Changes go through a ticket. */
+function lcEnds(v) {
+  const ok = v.cutoff && v.rev > 0;
+  return { revEnd: ok ? lcAddMonths(v.cutoff, v.rev) : null, amortEnd: ok && v.amort > 0 ? lcAddMonths(v.cutoff, v.rev + v.amort) : null };
+}
+function lcLiveRender() {
+  const actions = document.getElementById('lc-live-actions');
+  const body = document.getElementById('lc-live-body');
+  if (!actions || !body) return;
+  actions.innerHTML = lcLiveEdit
+    ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="event.stopPropagation();lcLiveCancel()">Cancel</button><button class="btn-edit" id="lc-live-save" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveSave()">Save</button>'
+    : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveStart()">Edit</button>';
+  const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
+  const field = (label, html) => `<div class="view-field"><span class="view-label">${label}</span>${html}</div>`;
+  const text = t => `<span class="view-value">${t}</span>`;
+  const num = key => `<input type="number" min="1" class="form-input" id="lcl-${key}" value="${v[key] || ''}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
+  const date = key => `<input type="date" class="form-input" id="lcl-${key}" value="${v[key]}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
+  const closing = !lcLiveEdit ? text(lcFmt(lcParse(v.closing)))
+    : (LC_HAS_NORMAL ? text(lcFmt(lcParse(v.closing)) + ' 🔒 <span style="font-size:11px;color:#9CA3AF;">locked: a batch with tag NORMAL exists</span>') : date('closing'));
+  body.innerHTML = `<div class="view-grid">
+      ${field('Revolving Period (Months)', lcLiveEdit ? num('rev') : text(v.rev))}
+      ${field('Amortisation Period (Months)', lcLiveEdit ? num('amort') : text(v.amort))}
+      ${field('Initial Cutoff Date', lcLiveEdit ? date('cutoff') : text(lcFmt(lcParse(v.cutoff))))}
+      ${field('Closing Date', closing)}
+      ${field('Revolving End', `<span class="view-value" id="lcl-rev-end"></span>`)}
+      ${field('Amortisation End', `<span class="view-value" id="lcl-amort-end"></span>`)}
+    </div>
+    <div id="lcl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;">
+      <div class="form-hint">Closing Date can be edited until a batch with tag NORMAL exists. Changes go through a ticket.</div>
+      <label style="font-size:11px;color:#9CA3AF;white-space:nowrap;cursor:pointer;"><input type="checkbox" ${LC_HAS_NORMAL ? 'checked' : ''} onchange="lcSetNormal(this.checked)" /> Demo: a NORMAL batch exists</label>
+    </div>`;
+  lcLiveUpdate();
+}
+/* Updates the calculated end dates, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
+function lcLiveUpdate() {
+  const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
+  const e = lcEnds(v), saved = lcEnds(LC_LIVE);
+  const f = d => d ? lcFmt(d) : '—';
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  set('lcl-rev-end', f(e.revEnd)); set('lcl-amort-end', f(e.amortEnd));
+  const note = document.getElementById('lcl-shift');
+  if (note) {
+    const moves = [];
+    if (lcLiveEdit && f(e.revEnd) !== f(saved.revEnd)) moves.push('Revolving End ' + f(saved.revEnd) + ' → ' + f(e.revEnd));
+    if (lcLiveEdit && f(e.amortEnd) !== f(saved.amortEnd)) moves.push('Amortisation End ' + f(saved.amortEnd) + ' → ' + f(e.amortEnd));
+    note.style.display = moves.length ? '' : 'none';
+    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Drawdown dates and scheduled batches follow the revolving period.' : '';
+  }
+  const btn = document.getElementById('lc-live-save');
+  if (btn) {
+    const bad = !(v.rev > 0 && v.amort > 0 && v.cutoff && v.closing);
+    btn.disabled = bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : '';
+  }
+}
+function lcLiveSet(key, val) { lcLiveDraft[key] = (key === 'rev' || key === 'amort') ? (parseInt(val, 10) || 0) : val; lcLiveUpdate(); }
+function lcLiveStart() { lcLiveDraft = Object.assign({}, LC_LIVE); lcLiveEdit = true; lcLiveRender(); }
+function lcLiveCancel() { lcLiveEdit = false; lcLiveDraft = null; lcLiveRender(); }
+function lcSetNormal(on) {
+  LC_HAS_NORMAL = on;
+  if (lcLiveEdit && on) lcLiveDraft.closing = LC_LIVE.closing;   // a locked Closing Date cannot carry an edit
+  lcLiveRender();
+}
+function lcLiveSave() {
+  const keys = ['rev', 'amort', 'cutoff', 'closing'];
+  const changed = keys.filter(k => lcLiveDraft[k] !== LC_LIVE[k]);
+  const toast = document.getElementById('update-toast');
+  LC_LIVE = lcLiveDraft; lcLiveEdit = false; lcLiveDraft = null;
+  lcLiveRender();
+  if (toast) {
+    toast.textContent = changed.length ? '✓ Life cycle change (' + changed.length + ' field' + (changed.length > 1 ? 's' : '') + ') submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit';
+    toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200);
+  }
 }
 
 /* ── Basic Info step validation ── */
