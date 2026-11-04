@@ -164,6 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
 .dc-card { border: 2px solid #E5E7EB; border-radius: 10px; padding: 14px 18px; cursor: pointer; transition: all 0.15s; flex: 0 0 220px; }
 .dc-card.selected { border-color: #2563EB; background: #EFF6FF; }
 .dc-card:hover:not(.selected) { border-color: #93C5FD; }
+/* ── EC / PC Rules ── */
+.ec-th { padding: 9px 14px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: left; border-bottom: 1px solid #E5E7EB; background: #F9FAFB; }
+.ec-td { padding: 9px 14px; font-size: 13px; color: #374151; vertical-align: middle; }
+.ec-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #111827; }
+.ec-type { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.ec-type.EC { background: #DBEAFE; color: #1D4ED8; }
+.ec-type.PC { background: #EDE9FE; color: #6D28D9; }
+.ec-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.ec-val.missing { border-color: #DC2626; background: #FEF2F2; }
+.ec-sub { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; }
+.ec-sub-title { font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.06em; }
+.ec-empty { border: 1px dashed #D1D5DB; border-radius: 8px; padding: 18px; text-align: center; font-size: 13px; color: #9CA3AF; }
+.ec-pick { white-space: nowrap; padding: 7px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid #2563EB; background: #2563EB; color: #fff; }
+.ec-pick.on { background: #fff; color: #2563EB; }
+.ec-pick:disabled { background: #F3F4F6; border-color: #E5E7EB; color: #9CA3AF; cursor: default; }
 .dc-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px; }
 .dc-check { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #374151; cursor: pointer; margin-bottom: 8px; }
 
@@ -1263,15 +1278,19 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- EC / PC Rules — locked (Phase 2) -->
-    <div class="section-card" style="opacity:.6;">
-      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="section-title" style="margin:0;">EC / PC Rules</div>
-          <span style="font-size:11px;background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB;border-radius:4px;padding:2px 7px;font-weight:600;">🔒 Phase 2</span>
-        </div>
+    <!-- EC / PC Rules: two sections. Each opens its own library to add rules, then the value is set per funder -->
+    <div class="section-card" id="ecpc-card">
+      <div class="section-header">
+        <div class="section-title">EC / PC Rules <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">EC = Eligibility Criteria, PC = Portfolio Criteria. The value is set per funder.</span></span></div>
       </div>
-      <div class="section-body" style="color:#9CA3AF;font-size:13px;">Not configurable in this phase. Will be supported in Phase 2.</div>
+      <div class="section-body">
+        <div class="ec-sub"><div class="ec-sub-title">Eligibility Criteria (EC) <span id="ec-count-EC" style="margin-left:8px;color:#2563EB;text-transform:none;letter-spacing:0;"></span></div><button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ecLibOpen('EC')">+ Add EC</button></div>
+        <div id="ec-body-EC"></div>
+        <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
+        <div class="ec-sub"><div class="ec-sub-title">Portfolio Criteria (PC) <span id="ec-count-PC" style="margin-left:8px;color:#2563EB;text-transform:none;letter-spacing:0;"></span></div><button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ecLibOpen('PC')">+ Add PC</button></div>
+        <div id="ec-body-PC"></div>
+        <div id="ec-status" style="font-size:12px;font-weight:500;margin-top:14px;"></div>
+      </div>
     </div>
 
     <!-- Loan Selection Strategy — locked (Phase 2) -->
@@ -1997,6 +2016,12 @@ tr.drag-over { border-top: 2px solid #2563EB; }
               </table>
             </div>
           </div>
+        </div>
+
+        <!-- EC / PC Rules -->
+        <div class="rv-section" style="margin-top:20px;">
+          <div class="rv-section-title">EC / PC Rules</div>
+          <div id="rv-ecpc-body"></div>
         </div>
 
         <!-- Management Plan -->
@@ -2940,8 +2965,8 @@ tr.drag-over { border-top: 2px solid #2563EB; }
         </div>
         <!-- EC / PC Rules -->
         <div class="view-section">
-          <div class="view-section-hd"><span class="view-section-title">EC / PC Rules</span></div>
-          <div class="view-section-body"><div class="empty-state-sm"><div class="ico">🔒</div><div class="txt">EC/PC rules config</div></div></div>
+          <div class="view-section-hd"><span class="view-section-title">EC / PC Rules</span><span id="ecpc-live-actions"></span></div>
+          <div class="view-section-body" id="ecpc-live-body"></div>
         </div>
         <!-- Loan selection strategy -->
         <div class="view-section">
@@ -5482,6 +5507,38 @@ let DRAWDOWNS = [{ date: '2026-11-01', amt: 70 }, { date: '2027-01-01', amt: 75 
 lcRecalc();
 ddRender();
 
+/* EC / PC Rules: catalogue, the selection and value of each rule for this funder, and the live (post go-live) copy.
+   Declared here for the same reason as DRAWDOWNS; the functions are further down (ecRender, ecLiveRender).
+   Codes and names follow the Funder & EC rule Mapping page; the PC rows and the values are sample data.
+   live = on BD's list of fields that stay changeable after go-live. */
+const ECPC_CATALOG = [
+  { code: 'ec_01',  name: 'User Identity',                type: 'EC', level: 'User',      live: false, op: '=',  hint: 'e.g. Individual',     def: { op: '=',  v1: 'Individual' } },
+  { code: 'ec_02',  name: 'User Default History',         type: 'EC', level: 'User',      live: true,  op: '<',  hint: 'e.g. 30 days',        def: null },
+  { code: 'ec_03',  name: 'User Activation Time',         type: 'EC', level: 'User',      live: false, op: '<=', hint: 'e.g. 2023-09-30',     def: null },
+  { code: 'ec_04',  name: 'User Age at Origination',      type: 'EC', level: 'User',      live: true,  op: 'between', hint: 'e.g. 20',        def: { op: 'between', v1: '20', v2: '60' } },
+  { code: 'ec_05',  name: 'User Max Limit',               type: 'EC', level: 'User',      live: true,  op: '<=', hint: 'e.g. 200000 THB',     def: { op: '<=', v1: '200000 THB' } },
+  { code: 'ec_07',  name: 'Loan Arrears',                 type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 7 days',         def: { op: '<=', v1: '7 days' } },
+  { code: 'ec_08a', name: 'Loan Tenure',                  type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 12 months',     def: { op: '<=', v1: '12 months' } },
+  { code: 'ec_09',  name: 'Loan Effective Interest Rate', type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 33% p.a.',       def: { op: '<=', v1: '33% p.a.' } },
+  { code: 'ec_11',  name: 'User Bankruptcy Status',       type: 'EC', level: 'User',      live: false, op: '=',  hint: 'e.g. Not bankrupt',   def: { op: '=',  v1: 'Not bankrupt' } },
+  { code: 'ec_12',  name: 'User Loan Addendum Consent',   type: 'EC', level: 'User',      live: false, op: '>=', hint: 'e.g. version 4',      def: null },
+  { code: 'hr_01',  name: 'Loan External Pleging',        type: 'EC', level: 'Loan',      live: false, op: '=',  hint: 'e.g. Not pledged',    def: { op: '=',  v1: 'Not pledged' } },
+  { code: 'hr_02',  name: 'Loan Self-funded',             type: 'EC', level: 'Loan',      live: false, op: '=',  hint: 'e.g. False',          def: { op: '=',  v1: 'False' } },
+  { code: 'int_01a',name: 'Eligible License Type',        type: 'EC', level: 'Loan',      live: false, op: 'in', hint: 'e.g. Type A, Type B', def: { op: 'in', v1: 'Type A, Type B' } },
+  { code: 'pc_01',  name: 'Top 10 Obligor Concentration', type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 15% of pool',    def: null },
+  { code: 'pc_02',  name: 'Max Single Obligor Exposure',  type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 1% of pool',     def: null },
+  { code: 'pc_03',  name: 'Weighted Avg Interest Rate',   type: 'PC', level: 'Portfolio', live: true,  op: '>=', hint: 'e.g. 20% p.a.',       def: null }
+];
+/* A value is { op, v1, v2 }: an operator and one value, or two values for "between". Present only for the selected rules. */
+const EC_OPS = ['<=', '>=', '<', '>', '=', '≠', 'in', 'between'];
+let ECPC_VAL = {};
+ECPC_CATALOG.forEach(c => { if (c.def) ECPC_VAL[c.code] = Object.assign({ v2: '' }, c.def); });
+let ecLibType = 'EC', ecLibPick = new Set();   // Rule library modal state
+let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
+let ecLiveEdit = false, ecLiveDraft = null;
+ecRender();
+ecLiveRender();
+
 function selectPricing(card) {
   document.querySelectorAll('.radio-card').forEach(c => {
     c.classList.remove('selected');
@@ -6879,6 +6936,149 @@ function ddUpdate() {
   }
 }
 
+/* ── EC / PC Rules (Module 2) ──
+   Two sections, EC and PC. "+ Add" opens the library of that type; the picked rules land in the section with an empty value to fill in.
+   The value is an operator (<=, >=, <, >, =, ≠, in, between) plus the value(s). Rows are only rebuilt on add, remove or operator change,
+   so typing in a value never loses focus. */
+function ecEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function ecClone(map) { const o = {}; Object.keys(map).forEach(k => { o[k] = Object.assign({}, map[k]); }); return o; }
+function ecSelected(type) { return ECPC_CATALOG.filter(c => c.code in ECPC_VAL && (!type || c.type === type)); }
+function ecMissing(v) { return !String(v.v1).trim() || (v.op === 'between' && !String(v.v2).trim()); }
+function ecFmt(v) { return v.op === 'between' ? 'between ' + v.v1 + ' and ' + v.v2 : v.op + ' ' + v.v1; }
+/* Operator dropdown + value box(es). handler(code, part, value) is called with part = 'op' | 'v1' | 'v2'. pfx keeps element ids apart. */
+function ecValueHtml(c, v, handler, pfx) {
+  const ops = EC_OPS.map(o => `<option value="${o}"${o === v.op ? ' selected' : ''}>${o}</option>`).join('');
+  const box = (part, id) => `<input type="text" class="form-input ec-val" id="${id}" value="${ecEsc(v[part])}" placeholder="${ecEsc(c.hint)}" style="flex:1;min-width:0;" oninput="${handler}('${c.code}','${part}',this.value)" />`;
+  return `<div style="display:flex;gap:6px;align-items:center;">
+    <select class="form-select" style="width:92px;flex-shrink:0;" onchange="${handler}('${c.code}','op',this.value)">${ops}</select>
+    ${box('v1', pfx + '-val-' + c.code)}${v.op === 'between' ? '<span style="font-size:12px;color:#6B7280;">and</span>' + box('v2', pfx + '-val2-' + c.code) : ''}
+  </div>`;
+}
+function ecRender() {
+  ['EC', 'PC'].forEach(t => {
+    const body = document.getElementById('ec-body-' + t);
+    if (!body) return;
+    const rows = ecSelected(t);
+    body.innerHTML = rows.length
+      ? `<table style="width:100%;border-collapse:collapse;"><thead><tr>
+          <th class="ec-th" style="width:90px;">Code</th><th class="ec-th">Name</th><th class="ec-th" style="width:80px;">Level</th><th class="ec-th" style="width:420px;">Value</th><th class="ec-th" style="width:80px;"></th></tr></thead>
+          <tbody>${rows.map(c => `<tr style="border-bottom:1px solid #F3F4F6;">
+            <td class="ec-td"><span class="ec-code">${c.code}</span></td>
+            <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
+            <td class="ec-td" style="font-size:12px;color:#6B7280;">${c.level}</td>
+            <td class="ec-td">${ecValueHtml(c, ECPC_VAL[c.code], 'ecSetPart', 'ec')}</td>
+            <td class="ec-td"><button class="tbl-act-link" style="color:#DC2626;" onclick="ecRemove('${c.code}')">Remove</button></td>
+          </tr>`).join('')}</tbody></table>`
+      : `<div class="ec-empty">No ${t} added yet. Click + Add ${t} to pick from the ${t} library.</div>`;
+    const cnt = document.getElementById('ec-count-' + t);
+    if (cnt) cnt.textContent = rows.length ? rows.length + ' added' : '';
+  });
+  ecUpdate();
+}
+function ecRemove(code) { delete ECPC_VAL[code]; ecRender(); }
+function ecSetPart(code, part, val) {
+  ECPC_VAL[code][part] = val;
+  if (part === 'op') ecRender(); else ecUpdate();   // "between" adds a second box
+}
+function ecUpdate() {
+  const sel = ecSelected();
+  const missing = sel.filter(c => ecMissing(ECPC_VAL[c.code]));
+  sel.forEach(c => {
+    const v = ECPC_VAL[c.code];
+    const a = document.getElementById('ec-val-' + c.code), b = document.getElementById('ec-val2-' + c.code);
+    if (a) a.classList.toggle('missing', !String(v.v1).trim());
+    if (b) b.classList.toggle('missing', !String(v.v2).trim());
+  });
+  const nEc = sel.filter(c => c.type === 'EC').length, nPc = sel.length - nEc;
+  const st = document.getElementById('ec-status');
+  if (st) {
+    if (!sel.length) { st.style.color = '#D97706'; st.textContent = '⚠ No EC or PC added yet'; }
+    else if (missing.length) { st.style.color = '#DC2626'; st.textContent = '✗ ' + missing.length + ' rule' + (missing.length > 1 ? 's have' : ' has') + ' no value: ' + missing.map(c => c.code).join(', '); }
+    else { st.style.color = '#16A34A'; st.textContent = '✓ ' + nEc + ' EC and ' + nPc + ' PC added, each with a value'; }
+  }
+  ecRenderReview();
+}
+function ecGroupHtml(type, rows, valueCell) {
+  const title = type === 'EC' ? 'Eligibility Criteria (EC)' : 'Portfolio Criteria (PC)';
+  return `<div class="ec-sub-title" style="margin:12px 0 6px;">${title}</div>` + (rows.length
+    ? `<table class="rv-table"><thead><tr><th style="width:90px;">Code</th><th>Name</th><th style="width:80px;">Level</th><th style="width:420px;">Value</th></tr></thead><tbody>${rows.map(c => `<tr><td><span class="ec-code">${c.code}</span></td><td>${c.name}</td><td>${c.level}</td><td>${valueCell(c)}</td></tr>`).join('')}</tbody></table>`
+    : `<div style="font-size:13px;color:#9CA3AF;padding:4px 0;">No ${type} added</div>`);
+}
+function ecRenderReview() {
+  const el = document.getElementById('rv-ecpc-body');
+  if (!el) return;
+  const cell = c => ecMissing(ECPC_VAL[c.code]) ? '<span style="color:#DC2626;">— missing</span>' : `<span class="ec-code">${ecEsc(ecFmt(ECPC_VAL[c.code]))}</span>`;
+  el.innerHTML = ecGroupHtml('EC', ecSelected('EC'), cell) + ecGroupHtml('PC', ecSelected('PC'), cell);
+}
+
+/* Rule library: pick rules of one type, Save adds them to the section */
+function ecLibOpen(t) {
+  ecLibType = t; ecLibPick = new Set();
+  document.getElementById('ec-lib-title').textContent = t + ' Library';
+  document.getElementById('ec-lib-search').value = '';
+  ecLibRender();
+  document.getElementById('ec-lib-modal').classList.add('open');
+}
+function ecLibClose() { document.getElementById('ec-lib-modal').classList.remove('open'); }
+function ecLibRender() {
+  const q = document.getElementById('ec-lib-search').value.trim().toLowerCase();
+  const rows = ECPC_CATALOG.filter(c => c.type === ecLibType && (!q || (c.code + ' ' + c.name).toLowerCase().includes(q)));
+  document.getElementById('ec-lib-tbody').innerHTML = rows.length ? rows.map(c => {
+    const added = c.code in ECPC_VAL, picked = ecLibPick.has(c.code);
+    return `<tr style="border-bottom:1px solid #F3F4F6;">
+      <td class="ec-td" style="padding-left:28px;"><span class="ec-code">${c.code}</span></td>
+      <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
+      <td class="ec-td" style="font-size:12px;color:#6B7280;">${c.level}</td>
+      <td class="ec-td" style="text-align:right;padding-right:28px;">${added
+        ? '<button class="ec-pick" disabled>Added</button>'
+        : `<button class="ec-pick${picked ? ' on' : ''}" onclick="ecLibToggle('${c.code}')">${picked ? '✓ Selected' : 'Select'}</button>`}</td>
+    </tr>`;
+  }).join('') : '<tr><td class="ec-td" colspan="4" style="text-align:center;color:#9CA3AF;padding:28px;">No rule matches</td></tr>';
+  document.getElementById('ec-lib-count').textContent = ecLibPick.size ? ecLibPick.size + ' selected' : '';
+}
+function ecLibToggle(code) { if (ecLibPick.has(code)) ecLibPick.delete(code); else ecLibPick.add(code); ecLibRender(); }
+function ecLibSave() {
+  const added = ECPC_CATALOG.filter(c => ecLibPick.has(c.code));
+  added.forEach(c => { ECPC_VAL[c.code] = { op: c.op, v1: '', v2: '' }; });   // starts with the rule's usual operator
+  ecLibClose();
+  ecRender();
+  if (added.length) { const el = document.getElementById('ec-val-' + added[0].code); if (el) el.focus(); }
+}
+
+/* ── EC / PC Rules (Lender Detail, live funder) ──
+   After go-live the list of rules is fixed. Only values on BD's changeable list can be edited, and an edit goes to the Ticket Center. */
+function ecLiveRender() {
+  const actions = document.getElementById('ecpc-live-actions');
+  const body = document.getElementById('ecpc-live-body');
+  if (!actions || !body) return;
+  actions.innerHTML = ecLiveEdit
+    ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="ecLiveCancel()">Cancel</button><button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ecLiveSave()">Save</button>'
+    : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ecLiveStart()">Edit</button>';
+  const src = ecLiveEdit ? ecLiveDraft : ECPC_LIVE;
+  const rows = ECPC_CATALOG.filter(c => c.code in src);
+  const hint = ecLiveEdit
+    ? '🔒 marks a rule that is not on the changeable list, so its value cannot be edited after go-live. Changes need maker/checker approval.'
+    : 'The list of rules is fixed after go-live. Values on the changeable list can be edited; changes need maker/checker approval.';
+  const cell = c => ecLiveEdit && c.live
+    ? ecValueHtml(c, src[c.code], 'ecLiveSetPart', 'ecl')
+    : `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>${ecLiveEdit ? ' <span title="Not on the changeable list" style="margin-left:6px;">🔒</span>' : ''}`;
+  body.innerHTML = `<div class="form-hint" style="margin-bottom:4px;">${hint}</div>`
+    + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell);
+}
+function ecLiveSetPart(code, part, val) { ecLiveDraft[code][part] = val; if (part === 'op') ecLiveRender(); }
+function ecLiveStart() { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; ecLiveRender(); }
+function ecLiveCancel() { ecLiveEdit = false; ecLiveDraft = null; ecLiveRender(); }
+function ecLiveSave() {
+  const changed = Object.keys(ecLiveDraft).filter(k => ecFmt(ecLiveDraft[k]) !== ecFmt(ECPC_LIVE[k]));
+  const empty = Object.keys(ecLiveDraft).some(k => ecMissing(ecLiveDraft[k]));
+  const toast = document.getElementById('update-toast');
+  const say = t => { if (toast) { toast.textContent = t; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); } };
+  if (empty) { say('✗ Every rule needs a value'); return; }
+  ECPC_LIVE = ecLiveDraft; ecLiveEdit = false; ecLiveDraft = null;
+  ecLiveRender();
+  say(changed.length ? '✓ ' + changed.length + ' EC / PC value change' + (changed.length > 1 ? 's' : '') + ' submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit');
+}
+
 /* ── Basic Info step validation ── */
 function s1Next() {
   const fields = [
@@ -7433,6 +7633,27 @@ function spSubmit() {
     <div class="modal-footer" style="padding:14px 28px;display:flex;justify-content:flex-end;gap:10px;">
       <button class="btn-outline-sm" style="padding:8px 24px;font-size:13px;" onclick="resetClawbackModal()">Reset</button>
       <button class="btn-primary-lg" style="font-size:13px;padding:8px 24px;" onclick="submitClawbackModal()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="ec-lib-modal">
+  <div class="modal" style="width:720px;">
+    <div class="modal-header">
+      <div><div class="modal-title" id="ec-lib-title">EC Library</div></div>
+      <button class="modal-close" onclick="ecLibClose()">✕</button>
+    </div>
+    <div style="padding:14px 28px;border-bottom:1px solid #F3F4F6;"><input type="text" class="form-input" id="ec-lib-search" placeholder="Search rules..." oninput="ecLibRender()" style="padding:10px 14px;" /></div>
+    <div class="modal-body" style="min-height:260px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr><th class="ec-th" style="padding-left:28px;width:110px;">Code</th><th class="ec-th">Rules</th><th class="ec-th" style="width:90px;">Level</th><th class="ec-th" style="text-align:right;padding-right:28px;width:150px;">Operation</th></tr></thead>
+        <tbody id="ec-lib-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer" style="align-items:center;">
+      <span id="ec-lib-count" style="margin-right:auto;font-size:12px;font-weight:600;color:#2563EB;"></span>
+      <button class="btn-outline-sm" style="padding:8px 24px;font-size:13px;" onclick="ecLibClose()">Cancel</button>
+      <button class="btn-primary-lg" style="font-size:13px;padding:8px 24px;" onclick="ecLibSave()">Save</button>
     </div>
   </div>
 </div>
