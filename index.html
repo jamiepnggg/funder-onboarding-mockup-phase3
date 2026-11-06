@@ -895,7 +895,7 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- Life cycle: period lengths and key dates. Drawdown timing (Module 2) is counted from these. -->
+    <!-- Life cycle: key dates. BD picks every date; the periods are calculated. Drawdown timing (Module 2) is checked against these. -->
     <div class="section-card" id="lifecycle-card">
       <div class="section-header">
         <div class="section-title">Life cycle</div>
@@ -903,36 +903,43 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       <div class="section-body">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
           <div>
-            <label class="form-label">Revolving Period (Months)</label>
-            <input type="number" min="0" class="form-input" id="lc-rev-months" value="24" placeholder="e.g. 24" oninput="lcRecalc()" />
-          </div>
-          <div>
-            <label class="form-label">Amortisation Period (Months) <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">Wind-down period after the revolving period ends.</span></span></label>
-            <input type="number" min="0" class="form-input" id="lc-amort-months" value="24" placeholder="e.g. 24" oninput="lcRecalc()" />
-          </div>
-          <div>
             <label class="form-label">Initial Cutoff Date</label>
             <input type="date" class="form-input" id="lc-initial-cutoff" value="2026-11-01" oninput="lcRecalc()" />
-            <div class="form-hint" style="margin-top:4px;">Start of the revolving period. Revolving End, Amortisation End and drawdown timing follow this date.</div>
+            <div class="form-hint" style="margin-top:4px;">Start of the revolving period. Drawdown dates must fall between this date and Revolving End.</div>
           </div>
           <div>
             <label class="form-label">Closing Date</label>
-            <input type="date" class="form-input" id="lc-closing" value="2026-10-15" />
+            <input type="date" class="form-input" id="lc-closing" value="2026-10-15" oninput="lcRecalc()" />
             <div class="form-hint" style="margin-top:4px;">Optional at onboarding. It often changes, and can be edited until a batch with tag NORMAL exists.</div>
+          </div>
+          <div>
+            <label class="form-label">Last Cutoff Date</label>
+            <input type="date" class="form-input" id="lc-last-cutoff" value="2028-10-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-last" style="margin-top:4px;">The last cutoff of the revolving period.</div>
+          </div>
+          <div>
+            <label class="form-label">Revolving End Date</label>
+            <input type="date" class="form-input" id="lc-rev-end" value="2028-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-rev" style="margin-top:4px;">End of the revolving period.</div>
+          </div>
+          <div>
+            <label class="form-label">Maturity Date</label>
+            <input type="date" class="form-input" id="lc-maturity" value="2030-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-mat" style="margin-top:4px;">End of the amortisation period.</div>
           </div>
         </div>
 
         <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:4px;">
           <div>
-            <div class="view-label" style="margin-bottom:4px;">Revolving End</div>
-            <div id="lc-rev-end" style="font-size:14px;font-weight:600;color:#111827;">—</div>
-            <div class="form-hint">Initial Cutoff Date + Revolving Period</div>
+            <div class="view-label" style="margin-bottom:4px;">Revolving Period</div>
+            <div id="lc-rev-months" style="font-size:14px;font-weight:600;color:#111827;">—</div>
+            <div class="form-hint">Initial Cutoff Date to Revolving End Date</div>
           </div>
           <div>
-            <div class="view-label" style="margin-bottom:4px;">Amortisation End</div>
-            <div id="lc-amort-end" style="font-size:14px;font-weight:600;color:#111827;">—</div>
-            <div class="form-hint">Revolving End + Amortisation Period</div>
+            <div class="view-label" style="margin-bottom:4px;">Amortisation Period <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">Wind-down period after the revolving period ends.</span></span></div>
+            <div id="lc-amort-months" style="font-size:14px;font-weight:600;color:#111827;">—</div>
+            <div class="form-hint">Revolving End Date to Maturity Date</div>
           </div>
         </div>
       </div>
@@ -1901,12 +1908,13 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div class="rv-row"><span class="rv-label">Clawback AR · Task ID</span><span class="rv-value">AR-2024-00456</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Task Name</span><span class="rv-value">Clawback AR Task</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Transify Key</span><span class="rv-value">clawback_ar_send</span></div>
-          <div class="rv-row"><span class="rv-label">Revolving Period</span><span class="rv-value">24 months</span></div>
-          <div class="rv-row"><span class="rv-label">Amortisation Period</span><span class="rv-value">24 months</span></div>
-          <div class="rv-row"><span class="rv-label">Initial Cutoff Date</span><span class="rv-value">1 Nov 2026</span></div>
-          <div class="rv-row"><span class="rv-label">Closing Date</span><span class="rv-value">15 Oct 2026</span></div>
-          <div class="rv-row"><span class="rv-label">Revolving End</span><span class="rv-value">1 Nov 2028</span></div>
-          <div class="rv-row"><span class="rv-label">Amortisation End</span><span class="rv-value">1 Nov 2030</span></div>
+          <div class="rv-row"><span class="rv-label">Initial Cutoff Date</span><span class="rv-value" id="rvl-start">1 Nov 2026</span></div>
+          <div class="rv-row"><span class="rv-label">Closing Date</span><span class="rv-value" id="rvl-closing">15 Oct 2026</span></div>
+          <div class="rv-row"><span class="rv-label">Last Cutoff Date</span><span class="rv-value" id="rvl-last">1 Oct 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Revolving End Date</span><span class="rv-value" id="rvl-rev-end">1 Nov 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Maturity Date</span><span class="rv-value" id="rvl-mat">1 Nov 2030</span></div>
+          <div class="rv-row"><span class="rv-label">Revolving Period</span><span class="rv-value" id="rvl-rev-m">24 months</span></div>
+          <div class="rv-row"><span class="rv-label">Amortisation Period</span><span class="rv-value" id="rvl-am-m">24 months</span></div>
           <div class="rv-row" style="align-items:flex-start;">
             <span class="rv-label" style="padding-top:4px;">Supported Tenors</span>
             <div style="display:flex;flex-wrap:wrap;gap:5px;">
@@ -5481,16 +5489,40 @@ function lcAddMonths(iso, n) {
 function lcFmt(d) {
   return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
 }
+/* Whole months between two ISO dates, plus the leftover days, e.g. "24 months" or "24 months 5 days" */
+function lcSpan(a, b) {
+  const x = lcParse(a), y = lcParse(b);
+  let m = (y.getFullYear() - x.getFullYear()) * 12 + (y.getMonth() - x.getMonth());
+  if (lcAddMonths(a, m) > y) m--;
+  const days = Math.round((y - lcAddMonths(a, m)) / 86400000);
+  return m + ' month' + (m === 1 ? '' : 's') + (days ? ' ' + days + ' day' + (days === 1 ? '' : 's') : '');
+}
+/* The order the dates must follow: Initial Cutoff <= Last Cutoff <= Revolving End < Maturity. Returns a message per field. */
+function lcCheck(start, last, revEnd, mat) {
+  const m = { last: '', rev: '', mat: '' };
+  if (last && start && last < start) m.last = 'Must not be before the Initial Cutoff Date';
+  else if (last && revEnd && last > revEnd) m.last = 'Must not be after the Revolving End Date';
+  if (revEnd && start && revEnd <= start) m.rev = 'Must be after the Initial Cutoff Date';
+  if (mat && revEnd && mat <= revEnd) m.mat = 'Must be after the Revolving End Date';
+  return m;
+}
 function lcRecalc() {
   const val = id => (document.getElementById(id) || {}).value || '';
-  const rev = parseInt(val('lc-rev-months'), 10) || 0;
-  const amort = parseInt(val('lc-amort-months'), 10) || 0;
-  const closing = val('lc-initial-cutoff');   // the revolving period is counted from the Initial Cutoff Date
+  const start = val('lc-initial-cutoff'), last = val('lc-last-cutoff'), revEnd = val('lc-rev-end'), mat = val('lc-maturity'), closing = val('lc-closing');
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  const revEnd = closing && rev > 0 ? lcAddMonths(closing, rev) : null;
-  const amortEnd = closing && rev > 0 && amort > 0 ? lcAddMonths(closing, rev + amort) : null;
-  set('lc-rev-end', revEnd ? lcFmt(revEnd) : '—');
-  set('lc-amort-end', amortEnd ? lcFmt(amortEnd) : '—');
+  const revM = start && revEnd && revEnd > start ? lcSpan(start, revEnd) : '—';
+  const amM = revEnd && mat && mat > revEnd ? lcSpan(revEnd, mat) : '—';
+  set('lc-rev-months', revM); set('lc-amort-months', amM);
+  const msg = lcCheck(start, last, revEnd, mat);
+  const base = { last: 'The last cutoff of the revolving period.', rev: 'End of the revolving period.', mat: 'End of the amortisation period.' };
+  [['last', 'lc-h-last'], ['rev', 'lc-h-rev'], ['mat', 'lc-h-mat']].forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg[k] || base[k]; el.style.color = msg[k] ? '#DC2626' : ''; }
+  });
+  // Review step shows the same values
+  const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
+  set('rvl-start', f(start)); set('rvl-closing', f(closing)); set('rvl-last', f(last)); set('rvl-rev-end', f(revEnd)); set('rvl-mat', f(mat));
+  set('rvl-rev-m', revM); set('rvl-am-m', amM);
   if (typeof ddUpdate === 'function') ddUpdate();   // drawdown dates and checks depend on these values
 }
 function lcParse(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
@@ -5531,7 +5563,7 @@ let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live'
 let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
 let ecLiveRemoved = new Set();                   // existing rules marked for removal, not yet submitted
 /* Life cycle of the live funder (Lender Detail) */
-let LC_LIVE = { rev: 24, amort: 24, cutoff: '2026-11-01', closing: '2026-10-15' };
+let LC_LIVE = { cutoff: '2026-11-01', closing: '2026-10-15', last: '2028-10-01', revEnd: '2028-11-01', maturity: '2030-11-01' };
 let lcLiveEdit = false, lcLiveDraft = null, LC_HAS_NORMAL = false;   // LC_HAS_NORMAL: a batch with tag NORMAL exists
 let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
 let ecLiveEdit = false, ecLiveDraft = null;
@@ -6912,8 +6944,7 @@ function ddUpdate() {
   else { msg = '✗ Drawdowns exceed the issued pool size by ' + Math.abs(diff) + " USD'm"; color = '#DC2626'; }
   // Each date must fall inside the revolving period set in Basic Info → Life cycle (Initial Cutoff Date to Revolving End)
   const start = (document.getElementById('lc-initial-cutoff') || {}).value || '';
-  const rev = parseInt((document.getElementById('lc-rev-months') || {}).value, 10) || 0;
-  const revEnd = start && rev > 0 ? lcIso(lcAddMonths(start, rev)) : '';
+  const revEnd = (document.getElementById('lc-rev-end') || {}).value || '';
   const outside = [];
   DRAWDOWNS.forEach((d, i) => {
     const el = document.getElementById('dd-date-' + i);
@@ -7111,12 +7142,8 @@ function ecLiveSave() {
 }
 
 /* ── Life cycle (Lender Detail, live funder) ──
-   Periods, Initial Cutoff Date and Closing Date can be edited; the end dates are calculated. Closing Date is locked once a batch
-   with tag NORMAL exists. Changes go through a ticket. */
-function lcEnds(v) {
-  const ok = v.cutoff && v.rev > 0;
-  return { revEnd: ok ? lcAddMonths(v.cutoff, v.rev) : null, amortEnd: ok && v.amort > 0 ? lcAddMonths(v.cutoff, v.rev + v.amort) : null };
-}
+   BD can edit the dates; the periods are calculated. Closing Date is locked once a batch with tag NORMAL exists.
+   Changes go through a ticket. */
 function lcLiveRender() {
   const actions = document.getElementById('lc-live-actions');
   const body = document.getElementById('lc-live-body');
@@ -7125,19 +7152,24 @@ function lcLiveRender() {
     ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="event.stopPropagation();lcLiveCancel()">Cancel</button><button class="btn-edit" id="lc-live-save" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveSave()">Save</button>'
     : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveStart()">Edit</button>';
   const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
-  const field = (label, html) => `<div class="view-field"><span class="view-label">${label}</span>${html}</div>`;
+  const field = (label, html, hintId) => `<div class="view-field"><span class="view-label">${label}</span>${html}${hintId ? `<span id="${hintId}" style="font-size:11px;color:#DC2626;"></span>` : ''}</div>`;
   const text = t => `<span class="view-value">${t}</span>`;
-  const num = key => `<input type="number" min="1" class="form-input" id="lcl-${key}" value="${v[key] || ''}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
   const date = key => `<input type="date" class="form-input" id="lcl-${key}" value="${v[key]}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
-  const closing = !lcLiveEdit ? text(lcFmt(lcParse(v.closing)))
+  const show = key => text(lcFmt(lcParse(v[key])));
+  const closing = !lcLiveEdit ? show('closing')
     : (LC_HAS_NORMAL ? text(lcFmt(lcParse(v.closing)) + ' 🔒 <span style="font-size:11px;color:#9CA3AF;">locked: a batch with tag NORMAL exists</span>') : date('closing'));
+  const d = key => lcLiveEdit ? date(key) : show(key);
   body.innerHTML = `<div class="view-grid">
-      ${field('Revolving Period (Months)', lcLiveEdit ? num('rev') : text(v.rev))}
-      ${field('Amortisation Period (Months)', lcLiveEdit ? num('amort') : text(v.amort))}
-      ${field('Initial Cutoff Date', lcLiveEdit ? date('cutoff') : text(lcFmt(lcParse(v.cutoff))))}
+      ${field('Initial Cutoff Date', d('cutoff'))}
       ${field('Closing Date', closing)}
-      ${field('Revolving End', `<span class="view-value" id="lcl-rev-end"></span>`)}
-      ${field('Amortisation End', `<span class="view-value" id="lcl-amort-end"></span>`)}
+      ${field('Last Cutoff Date', d('last'), 'lcl-h-last')}
+      ${field('Revolving End Date', d('revEnd'), 'lcl-h-rev')}
+      ${field('Maturity Date', d('maturity'), 'lcl-h-mat')}
+    </div>
+    <div style="height:1px;background:#F3F4F6;margin:16px 0;"></div>
+    <div class="view-grid">
+      ${field('Revolving Period', `<span class="view-value" id="lcl-rev-m"></span>`)}
+      ${field('Amortisation Period', `<span class="view-value" id="lcl-am-m"></span>`)}
     </div>
     <div id="lcl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;">
@@ -7146,28 +7178,29 @@ function lcLiveRender() {
     </div>`;
   lcLiveUpdate();
 }
-/* Updates the calculated end dates, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
+/* Updates the calculated periods, the field checks, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
 function lcLiveUpdate() {
   const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
-  const e = lcEnds(v), saved = lcEnds(LC_LIVE);
-  const f = d => d ? lcFmt(d) : '—';
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  set('lcl-rev-end', f(e.revEnd)); set('lcl-amort-end', f(e.amortEnd));
+  set('lcl-rev-m', v.cutoff && v.revEnd > v.cutoff ? lcSpan(v.cutoff, v.revEnd) : '—');
+  set('lcl-am-m', v.revEnd && v.maturity > v.revEnd ? lcSpan(v.revEnd, v.maturity) : '—');
+  const msg = lcCheck(v.cutoff, v.last, v.revEnd, v.maturity);
+  set('lcl-h-last', lcLiveEdit ? msg.last : ''); set('lcl-h-rev', lcLiveEdit ? msg.rev : ''); set('lcl-h-mat', lcLiveEdit ? msg.mat : '');
   const note = document.getElementById('lcl-shift');
   if (note) {
-    const moves = [];
-    if (lcLiveEdit && f(e.revEnd) !== f(saved.revEnd)) moves.push('Revolving End ' + f(saved.revEnd) + ' → ' + f(e.revEnd));
-    if (lcLiveEdit && f(e.amortEnd) !== f(saved.amortEnd)) moves.push('Amortisation End ' + f(saved.amortEnd) + ' → ' + f(e.amortEnd));
+    const names = { cutoff: 'Initial Cutoff Date', last: 'Last Cutoff Date', revEnd: 'Revolving End Date', maturity: 'Maturity Date' };
+    const f = iso => lcFmt(lcParse(iso));
+    const moves = lcLiveEdit ? Object.keys(names).filter(k => v[k] && v[k] !== LC_LIVE[k]).map(k => names[k] + ' ' + f(LC_LIVE[k]) + ' → ' + f(v[k])) : [];
     note.style.display = moves.length ? '' : 'none';
-    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Drawdown dates and scheduled batches follow the revolving period.' : '';
+    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Drawdown dates and scheduled batches follow these dates.' : '';
   }
   const btn = document.getElementById('lc-live-save');
   if (btn) {
-    const bad = !(v.rev > 0 && v.amort > 0 && v.cutoff && v.closing);
-    btn.disabled = bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : '';
+    const bad = !(v.cutoff && v.closing && v.last && v.revEnd && v.maturity) || msg.last || msg.rev || msg.mat;
+    btn.disabled = !!bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : '';
   }
 }
-function lcLiveSet(key, val) { lcLiveDraft[key] = (key === 'rev' || key === 'amort') ? (parseInt(val, 10) || 0) : val; lcLiveUpdate(); }
+function lcLiveSet(key, val) { lcLiveDraft[key] = val; lcLiveUpdate(); }
 function lcLiveStart() { lcLiveDraft = Object.assign({}, LC_LIVE); lcLiveEdit = true; lcLiveRender(); }
 function lcLiveCancel() { lcLiveEdit = false; lcLiveDraft = null; lcLiveRender(); }
 function lcSetNormal(on) {
@@ -7176,7 +7209,7 @@ function lcSetNormal(on) {
   lcLiveRender();
 }
 function lcLiveSave() {
-  const keys = ['rev', 'amort', 'cutoff', 'closing'];
+  const keys = ['cutoff', 'last', 'revEnd', 'maturity', 'closing'];
   const changed = keys.filter(k => lcLiveDraft[k] !== LC_LIVE[k]);
   const toast = document.getElementById('update-toast');
   LC_LIVE = lcLiveDraft; lcLiveEdit = false; lcLiveDraft = null;
