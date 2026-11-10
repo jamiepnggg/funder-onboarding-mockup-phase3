@@ -112,6 +112,7 @@ tr.plan-row-selected:hover td { background:#DBEAFE; }
 .tooltip-wrap { position: relative; display: inline-flex; align-items: center; }
 .tooltip-icon { font-size: 13px; color: #9CA3AF; cursor: default; margin-left: 4px; }
 .tooltip-box { display: none; position: fixed; background: #1F2937; color: #fff; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; border-radius: 6px; padding: 7px 12px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; pointer-events: none; transform: translateX(-50%); }
+.tooltip-box.wrap { white-space: normal; width: 250px; line-height: 1.45; }
 .tooltip-box::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #1F2937; }
 /* tooltip show/hide handled by JS for fixed positioning */
 </style>
@@ -122,9 +123,15 @@ document.addEventListener('mouseover', e => {
   if (!icon) return;
   const box = icon.parentElement.querySelector('.tooltip-box');
   if (!box) return;
+  box.style.display = 'block';
   const r = icon.getBoundingClientRect();
   box.style.top = (r.top - box.offsetHeight - 8) + 'px';
   box.style.left = (r.left + r.width / 2) + 'px';
+});
+document.addEventListener('mouseout', e => {
+  const icon = e.target.closest('.tooltip-icon');
+  const box = icon && icon.parentElement.querySelector('.tooltip-box');
+  if (box) box.style.display = 'none';
 });
 document.addEventListener('DOMContentLoaded', () => {
   // Re-calc on first hover render (offsetHeight is 0 before display)
@@ -165,6 +172,16 @@ document.addEventListener('DOMContentLoaded', () => {
 .dc-card.selected { border-color: #2563EB; background: #EFF6FF; }
 .dc-card:hover:not(.selected) { border-color: #93C5FD; }
 /* ── EC / PC Rules ── */
+.if-drop { border: 2px dashed #CBD5E1; border-radius: 10px; padding: 34px 20px; text-align: center; background: #F8FAFC; }
+.if-drop.over { border-color: #2563EB; background: #EFF6FF; }
+.if-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.if-tab { border: 1px solid #E5E7EB; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.if-tab-hd { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; background: #F9FAFB; font-size: 13px; font-weight: 600; color: #111827; }
+.if-issue { display: flex; gap: 10px; align-items: baseline; padding: 8px 14px; border-top: 1px solid #F3F4F6; font-size: 13px; color: #374151; }
+.if-sev { font-weight: 700; width: 14px; flex-shrink: 0; }
+.if-prev { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 18px; padding: 12px 14px; border: 1px solid #E5E7EB; border-radius: 8px; margin-bottom: 12px; background: #fff; }
+.if-prev .k { font-size: 10px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; }
+.if-prev .v { font-size: 13px; color: #111827; font-weight: 500; word-break: break-word; }
 .ec-th { padding: 9px 14px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: left; border-bottom: 1px solid #E5E7EB; background: #F9FAFB; }
 .ec-td { padding: 9px 14px; font-size: 13px; color: #374151; vertical-align: middle; }
 .ec-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #111827; }
@@ -863,11 +880,11 @@ tr.drag-over { border-top: 2px solid #2563EB; }
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label">SPV Name</label>
-            <input class="form-input" placeholder="e.g. TH_SPL_ABS_01" />
+            <input class="form-input" id="s1-spv" placeholder="e.g. TH_SPL_ABS_01" />
           </div>
           <div class="form-group">
             <label class="form-label">Tranche</label>
-            <input class="form-input" type="number" placeholder="e.g. 1" min="1" />
+            <input class="form-input" id="s1-tranche" type="number" placeholder="e.g. 1" min="1" />
           </div>
         </div>
       </div>
@@ -895,53 +912,36 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- Life cycle: key dates. BD picks every date; the periods are calculated. Drawdown timing (Module 2) is checked against these. -->
+    <!-- Life cycle: key dates. BD picks every date. Initial Cutoff Date and Closing Date are set per drawdown (Module 2). -->
     <div class="section-card" id="lifecycle-card">
       <div class="section-header">
         <div class="section-title">Life cycle</div>
       </div>
       <div class="section-body">
+        <div class="form-hint" style="margin-bottom:14px;">Initial Cutoff Date and Closing Date are set for each drawdown in Module 2 → Issue size → Drawdown Schedule.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
           <div>
-            <label class="form-label">Initial Cutoff Date</label>
-            <input type="date" class="form-input" id="lc-initial-cutoff" value="2026-11-01" oninput="lcRecalc()" />
-            <div class="form-hint" style="margin-top:4px;">Start of the revolving period. Drawdown dates must fall between this date and Revolving End.</div>
-          </div>
-          <div>
-            <label class="form-label">Closing Date</label>
-            <input type="date" class="form-input" id="lc-closing" value="2026-10-15" oninput="lcRecalc()" />
-            <div class="form-hint" style="margin-top:4px;">Optional at onboarding. It often changes, and can be edited until a batch with tag NORMAL exists.</div>
-          </div>
-          <div>
-            <label class="form-label">Last Cutoff Date</label>
-            <input type="date" class="form-input" id="lc-last-cutoff" value="2028-10-01" oninput="lcRecalc()" />
+            <label class="form-label">Last Cutoff Date <span data-lctip="last"></span></label>
+            <input type="date" class="form-input" id="lc-last-cutoff" value="2028-09-29" oninput="lcRecalc()" />
             <div class="form-hint" id="lc-h-last" style="margin-top:4px;">The last cutoff of the revolving period.</div>
           </div>
           <div>
-            <label class="form-label">Revolving End Date</label>
+            <label class="form-label">Revolving End Date <span data-lctip="rev"></span></label>
             <input type="date" class="form-input" id="lc-rev-end" value="2028-11-01" oninput="lcRecalc()" />
             <div class="form-hint" id="lc-h-rev" style="margin-top:4px;">End of the revolving period.</div>
           </div>
           <div>
-            <label class="form-label">Maturity Date</label>
-            <input type="date" class="form-input" id="lc-maturity" value="2030-11-01" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-mat" style="margin-top:4px;">End of the amortisation period.</div>
+            <label class="form-label">Maturity Date <span data-lctip="mat"></span></label>
+            <input type="date" class="form-input" id="lc-maturity" value="2028-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-mat" style="margin-top:4px;">Start of the amortisation period.</div>
+          </div>
+          <div>
+            <label class="form-label">Amortisation End Date <span data-lctip="end"></span></label>
+            <input type="date" class="form-input" id="lc-amort-end" value="2030-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-end" style="margin-top:4px;">End of the amortisation period.</div>
           </div>
         </div>
 
-        <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:4px;">
-          <div>
-            <div class="view-label" style="margin-bottom:4px;">Revolving Period</div>
-            <div id="lc-rev-months" style="font-size:14px;font-weight:600;color:#111827;">—</div>
-            <div class="form-hint">Initial Cutoff Date to Revolving End Date</div>
-          </div>
-          <div>
-            <div class="view-label" style="margin-bottom:4px;">Amortisation Period <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">Wind-down period after the revolving period ends.</span></span></div>
-            <div id="lc-amort-months" style="font-size:14px;font-weight:600;color:#111827;">—</div>
-            <div class="form-hint">Revolving End Date to Maturity Date</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1253,18 +1253,19 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           </tbody>
         </table>
 
-        <!-- Drawdown Schedule: when the funder draws down the issued pool (a specific date for each drawdown) -->
+        <!-- Drawdown Schedule: when the funder draws down the issued pool. Each drawdown has an Initial Cutoff Date and a Closing Date -->
         <div style="height:1px;background:#F3F4F6;margin:22px 0 18px;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;">Drawdown Schedule</div>
           <button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ddAdd()">+ Add drawdown</button>
         </div>
-        <div class="form-hint" style="margin-bottom:12px;">The date on which the funder draws down each amount of the issued pool. Dates must fall within the revolving period (Initial Cutoff Date to Revolving End in Basic Info → Life cycle) and amounts must add up to the issued pool size.</div>
+        <div class="form-hint" style="margin-bottom:12px;">Each drawdown has an Initial Cutoff Date and a Closing Date (the sold date of its initial batch). Closing Date is optional at onboarding and often changes. Initial Cutoff Dates must be in ascending order and on or before the Revolving End Date (Basic Info → Life cycle). Amounts must add up to the issued pool size.</div>
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:#F9FAFB;">
               <th style="width:44px;padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">#</th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Date</th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Cutoff Date <span data-lctip="cutoff"></span></th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Closing Date <span data-lctip="closing"></span></th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Amount (USD'm)</th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">% of Pool</th>
               <th style="width:60px;border-bottom:1px solid #E5E7EB;"></th>
@@ -1275,6 +1276,7 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             <tr>
               <td></td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total drawn</td>
+              <td></td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-val">0 USD'm</td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-pct">0%</td>
               <td></td>
@@ -1908,13 +1910,10 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div class="rv-row"><span class="rv-label">Clawback AR · Task ID</span><span class="rv-value">AR-2024-00456</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Task Name</span><span class="rv-value">Clawback AR Task</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Transify Key</span><span class="rv-value">clawback_ar_send</span></div>
-          <div class="rv-row"><span class="rv-label">Initial Cutoff Date</span><span class="rv-value" id="rvl-start">1 Nov 2026</span></div>
-          <div class="rv-row"><span class="rv-label">Closing Date</span><span class="rv-value" id="rvl-closing">15 Oct 2026</span></div>
-          <div class="rv-row"><span class="rv-label">Last Cutoff Date</span><span class="rv-value" id="rvl-last">1 Oct 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Last Cutoff Date</span><span class="rv-value" id="rvl-last">29 Sep 2028</span></div>
           <div class="rv-row"><span class="rv-label">Revolving End Date</span><span class="rv-value" id="rvl-rev-end">1 Nov 2028</span></div>
-          <div class="rv-row"><span class="rv-label">Maturity Date</span><span class="rv-value" id="rvl-mat">1 Nov 2030</span></div>
-          <div class="rv-row"><span class="rv-label">Revolving Period</span><span class="rv-value" id="rvl-rev-m">24 months</span></div>
-          <div class="rv-row"><span class="rv-label">Amortisation Period</span><span class="rv-value" id="rvl-am-m">24 months</span></div>
+          <div class="rv-row"><span class="rv-label">Maturity Date</span><span class="rv-value" id="rvl-mat">1 Nov 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Amortisation End Date</span><span class="rv-value" id="rvl-amort-end">1 Nov 2030</span></div>
           <div class="rv-row" style="align-items:flex-start;">
             <span class="rv-label" style="padding-top:4px;">Supported Tenors</span>
             <div style="display:flex;flex-wrap:wrap;gap:5px;">
@@ -2015,12 +2014,8 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             <span class="rv-label" style="padding-top:2px;">Drawdown Schedule</span>
             <div style="flex:1;">
               <table class="rv-table">
-                <thead><tr><th>Drawdown</th><th style="width:170px;">Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
-                <tbody>
-                  <tr><td>1</td><td>1 Nov 2026</td><td>70</td><td>48.28%</td></tr>
-                  <tr><td>2</td><td>1 Jan 2027</td><td>75</td><td>51.72%</td></tr>
-                  <tr style="font-weight:700;"><td>Total</td><td></td><td style="color:#2563EB;">145</td><td style="color:#2563EB;">100%</td></tr>
-                </tbody>
+                <thead><tr><th>Drawdown</th><th style="width:150px;">Initial Cutoff Date</th><th style="width:130px;">Closing Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
+                <tbody id="rv-dd-tbody"></tbody>
               </table>
             </div>
           </div>
@@ -2407,6 +2402,10 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             </div>
           </div>
           <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn-outline-sm" style="padding:9px 16px;font-size:13px;color:#374151;display:flex;align-items:center;gap:6px;" onclick="ifOpen()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              Import form (.xlsx)
+            </button>
             <button class="btn-outline-sm" style="padding:9px 16px;font-size:13px;color:#374151;display:flex;align-items:center;gap:6px;" onclick="openImportJsonModal()">
               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Import
@@ -2963,6 +2962,11 @@ tr.drag-over { border-top: 2px solid #2563EB; }
         <div class="view-section">
           <div class="view-section-hd"><span class="view-section-title">Issue size</span><span id="issue-size-actions"></span></div>
           <div class="view-section-body" id="issue-size-body"></div>
+        </div>
+        <!-- Drawdown Schedule (live funder): Initial Cutoff Date and Closing Date of each drawdown -->
+        <div class="view-section">
+          <div class="view-section-hd"><span class="view-section-title">Drawdown Schedule</span><span id="dd-live-actions"></span></div>
+          <div class="view-section-body" id="dd-live-body"></div>
         </div>
         <!-- EC / PC Rules -->
         <div class="view-section">
@@ -4736,6 +4740,7 @@ function editDraft(name){
   set('s1-product', saved.product);
   set('s1-originator', saved.originator);
   set('s1-investor', saved.investor);
+  if (typeof IF_IMPORTED !== 'undefined' && IF_IMPORTED[name]) ifApplyPrefill(IF_IMPORTED[name]);
 }
 
 /* ══ Workflow Template logic ══ */
@@ -5489,48 +5494,72 @@ function lcAddMonths(iso, n) {
 function lcFmt(d) {
   return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
 }
-/* Whole months between two ISO dates, plus the leftover days, e.g. "24 months" or "24 months 5 days" */
-function lcSpan(a, b) {
-  const x = lcParse(a), y = lcParse(b);
-  let m = (y.getFullYear() - x.getFullYear()) * 12 + (y.getMonth() - x.getMonth());
-  if (lcAddMonths(a, m) > y) m--;
-  const days = Math.round((y - lcAddMonths(a, m)) / 86400000);
-  return m + ' month' + (m === 1 ? '' : 's') + (days ? ' ' + days + ' day' + (days === 1 ? '' : 's') : '');
+/* The "i" tooltip beside a Life cycle date. <span data-lctip="key"></span> placeholders are filled by lcTipsInit(). */
+function lcTip(key) {
+  const tips = {
+    last: 'Cutoff date of the last batch. It must be on or before the Revolving End Date.',
+    rev: "The contract's actual end date of the revolving period. The last batch is cut off before this date. A reminder is sent about 2 weeks before it.",
+    mat: 'Start of the amortisation period. After the Revolving End Date no new loans are added and the portfolio starts to wind down.',
+    end: 'End of the amortisation period, when the portfolio is fully wound down.',
+    cutoff: 'The cutoff date of this drawdown. The earliest Initial Cutoff Date is when the revolving period starts.',
+    closing: 'The sold date of the initial batch of this drawdown.'
+  };
+  return '<span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box wrap">' + tips[key] + '</span></span>';
 }
-/* The order the dates must follow: Initial Cutoff <= Last Cutoff <= Revolving End < Maturity. Returns a message per field. */
-function lcCheck(start, last, revEnd, mat) {
-  const m = { last: '', rev: '', mat: '' };
-  if (last && start && last < start) m.last = 'Must not be before the Initial Cutoff Date';
+function lcTipsInit() {
+  document.querySelectorAll('[data-lctip]').forEach(el => { el.outerHTML = lcTip(el.getAttribute('data-lctip')); });
+}
+/* The order the dates must follow: Initial Cutoff <= Last Cutoff <= Revolving End <= Maturity < Amortisation End. Returns a message per field. */
+/* Sample public holidays for the prototype. The real list comes from the holiday calendar (which region it follows is still to be confirmed). */
+function lcHolidays() {
+  return { '2026-12-25': 'Christmas Day', '2027-01-01': "New Year's Day", '2027-12-25': 'Christmas Day', '2028-01-01': "New Year's Day", '2028-10-23': 'Public holiday',
+           '2028-12-25': 'Christmas Day', '2029-01-01': "New Year's Day", '2029-12-25': 'Christmas Day', '2030-01-01': "New Year's Day", '2030-12-25': 'Christmas Day' };
+}
+function lcDayIssue(iso) {
+  if (!iso) return '';
+  const dow = lcParse(iso).getDay();
+  if (dow === 0 || dow === 6) return 'Falls on a ' + (dow === 0 ? 'Sunday' : 'Saturday') + ' (weekend)';
+  const h = lcHolidays()[iso];
+  return h ? 'Falls on a public holiday (' + h + ')' : '';
+}
+function lcCheck(start, last, revEnd, mat, end, lbl) {
+  lbl = lbl || 'Initial Cutoff Date';
+  const m = { last: '', rev: '', mat: '', end: '' };
+  if (last && start && last < start) m.last = 'Must not be before the ' + lbl;
   else if (last && revEnd && last > revEnd) m.last = 'Must not be after the Revolving End Date';
-  if (revEnd && start && revEnd <= start) m.rev = 'Must be after the Initial Cutoff Date';
-  if (mat && revEnd && mat <= revEnd) m.mat = 'Must be after the Revolving End Date';
+  if (revEnd && start && revEnd <= start) m.rev = 'Must be after the ' + lbl;
+  if (mat && revEnd && mat < revEnd) m.mat = 'Must not be before the Revolving End Date';
+  if (end && mat && end <= mat) m.end = 'Must be after the Maturity Date';
+  // none of the dates may fall on a weekend or a public holiday
+  const day = { last: last, rev: revEnd, mat: mat, end: end };
+  Object.keys(day).forEach(k => { if (!m[k]) m[k] = lcDayIssue(day[k]); });
   return m;
 }
 function lcRecalc() {
   const val = id => (document.getElementById(id) || {}).value || '';
-  const start = val('lc-initial-cutoff'), last = val('lc-last-cutoff'), revEnd = val('lc-rev-end'), mat = val('lc-maturity'), closing = val('lc-closing');
+  const start = ddFirstCutoff(), last = val('lc-last-cutoff'), revEnd = val('lc-rev-end'), mat = val('lc-maturity'), end = val('lc-amort-end');   // the revolving period starts at the first drawdown's Initial Cutoff Date
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  const revM = start && revEnd && revEnd > start ? lcSpan(start, revEnd) : '—';
-  const amM = revEnd && mat && mat > revEnd ? lcSpan(revEnd, mat) : '—';
-  set('lc-rev-months', revM); set('lc-amort-months', amM);
-  const msg = lcCheck(start, last, revEnd, mat);
-  const base = { last: 'The last cutoff of the revolving period.', rev: 'End of the revolving period.', mat: 'End of the amortisation period.' };
-  [['last', 'lc-h-last'], ['rev', 'lc-h-rev'], ['mat', 'lc-h-mat']].forEach(([k, id]) => {
+  const msg = lcCheck(start, last, revEnd, mat, end, 'first Initial Cutoff Date');
+  const base = { last: 'The last cutoff of the revolving period.', rev: 'End of the revolving period.', mat: 'Start of the amortisation period.', end: 'End of the amortisation period.' };
+  [['last', 'lc-h-last', 'lc-last-cutoff'], ['rev', 'lc-h-rev', 'lc-rev-end'], ['mat', 'lc-h-mat', 'lc-maturity'], ['end', 'lc-h-end', 'lc-amort-end']].forEach(([k, id, inp]) => {
     const el = document.getElementById(id);
     if (el) { el.textContent = msg[k] || base[k]; el.style.color = msg[k] ? '#DC2626' : ''; }
+    const box = document.getElementById(inp);
+    if (box) box.style.borderColor = msg[k] ? '#DC2626' : '';
   });
   // Review step shows the same values
   const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
-  set('rvl-start', f(start)); set('rvl-closing', f(closing)); set('rvl-last', f(last)); set('rvl-rev-end', f(revEnd)); set('rvl-mat', f(mat));
-  set('rvl-rev-m', revM); set('rvl-am-m', amM);
+  set('rvl-last', f(last)); set('rvl-rev-end', f(revEnd)); set('rvl-mat', f(mat)); set('rvl-amort-end', f(end));
   if (typeof ddUpdate === 'function') ddUpdate();   // drawdown dates and checks depend on these values
+  return msg;
 }
 function lcParse(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function lcIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 /* Drawdown Schedule initial data and first render (functions are defined with Issue Size auto-calc below) */
-let DRAWDOWNS = [{ date: '2026-11-01', amt: 70 }, { date: '2027-01-01', amt: 75 }];
+let DRAWDOWNS = [{ date: '2026-11-01', closing: '2026-10-15', amt: 70 }, { date: '2027-01-01', closing: '2026-12-15', amt: 75 }];   // date = Initial Cutoff Date
 lcRecalc();
 ddRender();
+lcTipsInit();
 
 /* EC / PC Rules: catalogue, the selection and value of each rule for this funder, and the live (post go-live) copy.
    Declared here for the same reason as DRAWDOWNS; the functions are further down (ecRender, ecLiveRender).
@@ -5563,13 +5592,17 @@ let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live'
 let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
 let ecLiveRemoved = new Set();                   // existing rules marked for removal, not yet submitted
 /* Life cycle of the live funder (Lender Detail) */
-let LC_LIVE = { cutoff: '2026-11-01', closing: '2026-10-15', last: '2028-10-01', revEnd: '2028-11-01', maturity: '2030-11-01' };
-let lcLiveEdit = false, lcLiveDraft = null, LC_HAS_NORMAL = false;   // LC_HAS_NORMAL: a batch with tag NORMAL exists
+let LC_LIVE = { last: '2028-09-29', revEnd: '2028-11-01', maturity: '2028-11-01', amortEnd: '2030-11-01' };
+let lcLiveEdit = false, lcLiveDraft = null;
+/* Drawdown Schedule of the live funder (Lender Detail). */
+let DD_LIVE = DRAWDOWNS.map(d => ({ date: d.date, closing: d.closing, amt: d.amt }));
+let ddLiveEdit = false, ddLiveDraft = null;
 let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
 let ecLiveEdit = false, ecLiveDraft = null;
 ecRender();
 ecLiveRender();
 lcLiveRender();
+ddLiveRender();
 
 function selectPricing(card) {
   document.querySelectorAll('.radio-card').forEach(c => {
@@ -6888,9 +6921,14 @@ function isRecalc() {
 }
 
 /* ── Drawdown Schedule (Module 2 · Issue size) ──
-   Each drawdown has a specific date, checked against the revolving period in Basic Info → Life cycle. */
+   Each drawdown has an Initial Cutoff Date and an optional Closing Date. The first Initial Cutoff Date starts the revolving period
+   (Basic Info → Life cycle); every Initial Cutoff Date must be on or before the Revolving End Date. */
 /* DRAWDOWNS is declared and first rendered earlier in this script (next to the Discounting Setting code),
    because the legacy milestone drag-and-drop block further down throws at load and stops anything after it. */
+function ddFirstCutoff() {
+  const ds = DRAWDOWNS.map(d => d.date).filter(Boolean).sort();
+  return ds.length ? ds[0] : '';
+}
 function ddRender() {
   const tbody = document.getElementById('dd-tbody');
   if (!tbody) return;
@@ -6898,25 +6936,25 @@ function ddRender() {
       <td style="padding:12px 14px;font-size:12px;color:#9CA3AF;">${i + 1}</td>
       <td style="padding:12px 14px;"><div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;flex-wrap:wrap;">
         <input type="date" class="form-input" value="${d.date}" style="width:160px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
+      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.closing || ''}" style="width:160px;" oninput="ddSet(${i},'closing',this)" /></td>
       <td style="padding:12px 14px;"><div style="display:flex;gap:0;align-items:center;">
         <input type="number" min="0" value="${d.amt}" class="form-input" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddSet(${i},'amt',this)" />
         <span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div></td>
       <td style="padding:12px 14px;font-size:13px;color:#374151;" id="dd-pct-${i}">0%</td>
       <td style="padding:12px 14px;"><button class="tbl-act-link" style="color:${DRAWDOWNS.length > 1 ? '#DC2626' : '#D1D5DB'};" ${DRAWDOWNS.length > 1 ? '' : 'disabled'} onclick="ddRemove(${i})">Remove</button></td>
     </tr>`).join('');
-  ddUpdate();
+  lcRecalc();   // the first Initial Cutoff Date drives the revolving period; this also runs ddUpdate
 }
 
 function ddSet(i, field, el) {
-  DRAWDOWNS[i][field] = field === 'date' ? el.value : (parseFloat(el.value) || 0);
-  ddUpdate();
+  DRAWDOWNS[i][field] = field === 'amt' ? (parseFloat(el.value) || 0) : el.value;
+  if (field === 'date') lcRecalc(); else ddUpdate();
 }
 function ddAdd() {
-  // the next drawdown starts one month after the last one (or at the Initial Cutoff Date)
+  // the next drawdown starts one month after the last one; its Closing Date is filled in later
   const last = DRAWDOWNS[DRAWDOWNS.length - 1];
-  const start = (document.getElementById('lc-initial-cutoff') || {}).value || '';
-  const next = last && last.date ? lcIso(lcAddMonths(last.date, 1)) : start;
-  DRAWDOWNS.push({ date: next, amt: 0 });
+  const next = last && last.date ? lcIso(lcAddMonths(last.date, 1)) : '';
+  DRAWDOWNS.push({ date: next, closing: '', amt: 0 });
   ddRender();
 }
 function ddRemove(i) {
@@ -6935,35 +6973,35 @@ function ddUpdate() {
   set('dd-total-val', (Math.round(sum * 100) / 100) + " USD'm");
   set('dd-total-pct', (pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00') + '%');
   const diff = Math.round((pool - sum) * 100) / 100;
-  const dates = DRAWDOWNS.map(d => d.date);
-  const filled = dates.every(x => x);
-  const ordered = filled && dates.every((x, i) => i === 0 || x > dates[i - 1]);
+  const dates = DRAWDOWNS.map(d => d.date).filter(Boolean);   // every date is optional; the checks run on the filled ones
+  const ordered = dates.every((x, i) => i === 0 || x > dates[i - 1]);
   let msg, color;
   if (diff === 0) { msg = '✓ Drawdowns add up to the issued pool size'; color = '#16A34A'; }
   else if (diff > 0) { msg = '⚠ ' + diff + " USD'm of the issued pool is not scheduled yet"; color = '#D97706'; }
   else { msg = '✗ Drawdowns exceed the issued pool size by ' + Math.abs(diff) + " USD'm"; color = '#DC2626'; }
-  // Each date must fall inside the revolving period set in Basic Info → Life cycle (Initial Cutoff Date to Revolving End)
-  const start = (document.getElementById('lc-initial-cutoff') || {}).value || '';
+  // Every Initial Cutoff Date must be on or before the Revolving End Date (Basic Info → Life cycle)
   const revEnd = (document.getElementById('lc-rev-end') || {}).value || '';
   const outside = [];
   DRAWDOWNS.forEach((d, i) => {
     const el = document.getElementById('dd-date-' + i);
-    let text = '', bad = false;
-    if (!d.date) text = '';
-    else if (!start) text = 'set Initial Cutoff Date in Basic Info';
-    else if (d.date < start) { text = 'before the Initial Cutoff Date'; bad = true; }
-    else if (revEnd && d.date > revEnd) { text = 'after Revolving End (' + lcFmt(lcParse(revEnd)) + ')'; bad = true; }
-    else text = '';
+    const bad = !!(d.date && revEnd && d.date > revEnd);
     if (bad) outside.push(i + 1);
-    if (el) { el.textContent = text; el.style.color = bad ? '#DC2626' : '#9CA3AF'; }
+    if (el) { el.textContent = bad ? 'after Revolving End (' + lcFmt(lcParse(revEnd)) + ')' : ''; el.style.color = '#DC2626'; }
   });
   const st = document.getElementById('dd-status');
   if (st) {
     st.style.color = color;
     st.textContent = msg
-      + (!filled ? ' · Choose a date for every drawdown' : (ordered ? '' : ' · Drawdown dates must be in ascending order'))
-      + (outside.length ? ' · Drawdown ' + outside.join(', ') + ' falls outside the revolving period' : '');
-    if (!filled || !ordered || outside.length) st.style.color = '#DC2626';
+      + (ordered ? '' : ' · Initial Cutoff Dates must be in ascending order')
+      + (outside.length ? ' · Drawdown ' + outside.join(', ') + ' is after the Revolving End Date' : '');
+    if (!ordered || outside.length) st.style.color = '#DC2626';
+  }
+  // Review step shows the same schedule
+  const rv = document.getElementById('rv-dd-tbody');
+  if (rv) {
+    const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
+    rv.innerHTML = DRAWDOWNS.map((d, i) => `<tr><td>${i + 1}</td><td>${f(d.date)}</td><td>${f(d.closing)}</td><td>${d.amt}</td><td>${pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00'}%</td></tr>`).join('')
+      + `<tr style="font-weight:700;"><td>Total</td><td></td><td></td><td style="color:#2563EB;">${Math.round(sum * 100) / 100}</td><td style="color:#2563EB;">${pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00'}%</td></tr>`;
   }
 }
 
@@ -7142,8 +7180,8 @@ function ecLiveSave() {
 }
 
 /* ── Life cycle (Lender Detail, live funder) ──
-   BD can edit the dates; the periods are calculated. Closing Date is locked once a batch with tag NORMAL exists.
-   Changes go through a ticket. */
+   BD can edit Last Cutoff, Revolving End, Maturity and Amortisation End Date. Changes go through a ticket.
+   Initial Cutoff Date and Closing Date belong to each drawdown (Drawdown Schedule, Portfolio Setting). */
 function lcLiveRender() {
   const actions = document.getElementById('lc-live-actions');
   const body = document.getElementById('lc-live-body');
@@ -7152,70 +7190,155 @@ function lcLiveRender() {
     ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="event.stopPropagation();lcLiveCancel()">Cancel</button><button class="btn-edit" id="lc-live-save" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveSave()">Save</button>'
     : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="event.stopPropagation();lcLiveStart()">Edit</button>';
   const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
-  const field = (label, html, hintId) => `<div class="view-field"><span class="view-label">${label}</span>${html}${hintId ? `<span id="${hintId}" style="font-size:11px;color:#DC2626;"></span>` : ''}</div>`;
-  const text = t => `<span class="view-value">${t}</span>`;
-  const date = key => `<input type="date" class="form-input" id="lcl-${key}" value="${v[key]}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
-  const show = key => text(lcFmt(lcParse(v[key])));
-  const closing = !lcLiveEdit ? show('closing')
-    : (LC_HAS_NORMAL ? text(lcFmt(lcParse(v.closing)) + ' 🔒 <span style="font-size:11px;color:#9CA3AF;">locked: a batch with tag NORMAL exists</span>') : date('closing'));
-  const d = key => lcLiveEdit ? date(key) : show(key);
+  const field = (label, tip, html, hintId) => `<div class="view-field"><span class="view-label">${label} ${lcTip(tip)}</span>${html}<span id="${hintId}" style="font-size:11px;color:#DC2626;"></span></div>`;
+  const date = key => `<input type="date" class="form-input" id="lcl-${key}" value="${v[key] || ''}" style="width:200px;" oninput="lcLiveSet('${key}', this.value)" />`;
+  const d = key => lcLiveEdit ? date(key) : `<span class="view-value">${v[key] ? lcFmt(lcParse(v[key])) : '—'}</span>`;
   body.innerHTML = `<div class="view-grid">
-      ${field('Initial Cutoff Date', d('cutoff'))}
-      ${field('Closing Date', closing)}
-      ${field('Last Cutoff Date', d('last'), 'lcl-h-last')}
-      ${field('Revolving End Date', d('revEnd'), 'lcl-h-rev')}
-      ${field('Maturity Date', d('maturity'), 'lcl-h-mat')}
-    </div>
-    <div style="height:1px;background:#F3F4F6;margin:16px 0;"></div>
-    <div class="view-grid">
-      ${field('Revolving Period', `<span class="view-value" id="lcl-rev-m"></span>`)}
-      ${field('Amortisation Period', `<span class="view-value" id="lcl-am-m"></span>`)}
+      ${field('Last Cutoff Date', 'last', d('last'), 'lcl-h-last')}
+      ${field('Revolving End Date', 'rev', d('revEnd'), 'lcl-h-rev')}
+      ${field('Maturity Date', 'mat', d('maturity'), 'lcl-h-mat')}
+      ${field('Amortisation End Date', 'end', d('amortEnd'), 'lcl-h-end')}
     </div>
     <div id="lcl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;">
-      <div class="form-hint">Closing Date can be edited until a batch with tag NORMAL exists. Changes go through a ticket.</div>
-      <label style="font-size:11px;color:#9CA3AF;white-space:nowrap;cursor:pointer;"><input type="checkbox" ${LC_HAS_NORMAL ? 'checked' : ''} onchange="lcSetNormal(this.checked)" /> Demo: a NORMAL batch exists</label>
-    </div>`;
+    <div class="form-hint" style="margin-top:12px;">Initial Cutoff Date and Closing Date are set for each drawdown in Portfolio Setting → Drawdown Schedule. Changes go through a ticket.</div>`;
   lcLiveUpdate();
 }
-/* Updates the calculated periods, the field checks, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
+/* Updates the field checks, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
 function lcLiveUpdate() {
   const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  set('lcl-rev-m', v.cutoff && v.revEnd > v.cutoff ? lcSpan(v.cutoff, v.revEnd) : '—');
-  set('lcl-am-m', v.revEnd && v.maturity > v.revEnd ? lcSpan(v.revEnd, v.maturity) : '—');
-  const msg = lcCheck(v.cutoff, v.last, v.revEnd, v.maturity);
-  set('lcl-h-last', lcLiveEdit ? msg.last : ''); set('lcl-h-rev', lcLiveEdit ? msg.rev : ''); set('lcl-h-mat', lcLiveEdit ? msg.mat : '');
+  const msg = lcCheck(ddLiveFirst(), v.last, v.revEnd, v.maturity, v.amortEnd, 'first Initial Cutoff Date');
+  set('lcl-h-last', lcLiveEdit ? msg.last : ''); set('lcl-h-rev', lcLiveEdit ? msg.rev : ''); set('lcl-h-mat', lcLiveEdit ? msg.mat : ''); set('lcl-h-end', lcLiveEdit ? msg.end : '');
   const note = document.getElementById('lcl-shift');
   if (note) {
-    const names = { cutoff: 'Initial Cutoff Date', last: 'Last Cutoff Date', revEnd: 'Revolving End Date', maturity: 'Maturity Date' };
-    const f = iso => lcFmt(lcParse(iso));
-    const moves = lcLiveEdit ? Object.keys(names).filter(k => v[k] && v[k] !== LC_LIVE[k]).map(k => names[k] + ' ' + f(LC_LIVE[k]) + ' → ' + f(v[k])) : [];
+    const names = { last: 'Last Cutoff Date', revEnd: 'Revolving End Date', maturity: 'Maturity Date', amortEnd: 'Amortisation End Date' };
+    const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
+    const moves = lcLiveEdit ? Object.keys(names).filter(k => v[k] !== LC_LIVE[k]).map(k => names[k] + ' ' + f(LC_LIVE[k]) + ' → ' + f(v[k])) : [];
     note.style.display = moves.length ? '' : 'none';
-    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Drawdown dates and scheduled batches follow these dates.' : '';
+    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Scheduled batches follow these dates.' : '';
   }
   const btn = document.getElementById('lc-live-save');
   if (btn) {
-    const bad = !(v.cutoff && v.closing && v.last && v.revEnd && v.maturity) || msg.last || msg.rev || msg.mat;
+    const bad = msg.last || msg.rev || msg.mat || msg.end;
     btn.disabled = !!bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : '';
   }
 }
 function lcLiveSet(key, val) { lcLiveDraft[key] = val; lcLiveUpdate(); }
 function lcLiveStart() { lcLiveDraft = Object.assign({}, LC_LIVE); lcLiveEdit = true; lcLiveRender(); }
 function lcLiveCancel() { lcLiveEdit = false; lcLiveDraft = null; lcLiveRender(); }
-function lcSetNormal(on) {
-  LC_HAS_NORMAL = on;
-  if (lcLiveEdit && on) lcLiveDraft.closing = LC_LIVE.closing;   // a locked Closing Date cannot carry an edit
-  lcLiveRender();
-}
 function lcLiveSave() {
-  const keys = ['cutoff', 'last', 'revEnd', 'maturity', 'closing'];
+  const keys = ['last', 'revEnd', 'maturity', 'amortEnd'];
   const changed = keys.filter(k => lcLiveDraft[k] !== LC_LIVE[k]);
   const toast = document.getElementById('update-toast');
   LC_LIVE = lcLiveDraft; lcLiveEdit = false; lcLiveDraft = null;
   lcLiveRender();
+  ddLiveUpdate();   // the drawdown checks depend on these dates
   if (toast) {
     toast.textContent = changed.length ? '✓ Life cycle change (' + changed.length + ' field' + (changed.length > 1 ? 's' : '') + ') submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit';
+    toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200);
+  }
+}
+
+/* ── Drawdown Schedule (Lender Detail, live funder · Portfolio Setting) ──
+   BD can edit the Initial Cutoff Date, Closing Date and Amount of each drawdown. Amounts must not exceed the issued pool size (Issue size). Changes go through a ticket. */
+function ddLiveFirst(rows) {
+  const ds = (rows || DD_LIVE).map(r => r.date).filter(Boolean).sort();
+  return ds.length ? ds[0] : '';
+}
+function ddLiveRender() {
+  const actions = document.getElementById('dd-live-actions');
+  const body = document.getElementById('dd-live-body');
+  if (!actions || !body) return;
+  actions.innerHTML = ddLiveEdit
+    ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="ddLiveCancel()">Cancel</button><button class="btn-edit" id="dd-live-save" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ddLiveSave()">Save</button>'
+    : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ddLiveStart()">Edit</button>';
+  const rows = ddLiveEdit ? ddLiveDraft : DD_LIVE;
+  const pool = ISSUE.pool;
+  const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
+  const th = (t, tip) => `<th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">${t}${tip ? ' ' + lcTip(tip) : ''}</th>`;
+  const td = 'padding:12px 14px;font-size:13px;color:#374151;';
+  const input = (i, key) => `<input type="date" class="form-input" id="ddl-${key}-${i}" value="${rows[i][key] || ''}" style="width:160px;" oninput="ddLiveSet(${i},'${key}',this.value)" />`;
+  const closing = (r, i) => ddLiveEdit ? input(i, 'closing') : f(r.closing);
+  const sum = Math.round(rows.reduce((s, r) => s + r.amt, 0) * 100) / 100;
+  const pct = n => (pool > 0 ? (n / pool * 100).toFixed(2) : '0.00') + '%';
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>${th('#')}${th('Initial Cutoff Date', 'cutoff')}${th('Closing Date', 'closing')}${th("Amount (USD'm)")}${th('% of Pool')}</tr></thead>
+      <tbody>${rows.map((r, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
+        <td style="${td}color:#9CA3AF;font-size:12px;">${i + 1}</td>
+        <td style="${td}">${ddLiveEdit ? input(i, 'date') : f(r.date)} <span id="ddl-msg-${i}" style="font-size:12px;color:#DC2626;"></span></td>
+        <td style="${td}">${closing(r, i)}</td>
+        <td style="${td}">${ddLiveEdit ? `<div style="display:flex;align-items:center;"><input type="number" min="0" class="form-input" id="ddl-amt-${i}" value="${r.amt}" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddLiveSet(${i},'amt',this.value)" /><span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div>` : r.amt}</td>
+        <td style="${td}" id="ddl-pct-${i}">${pct(r.amt)}</td></tr>`).join('')}
+        <tr><td colspan="3" style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total</td>
+          <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total">${sum}</td><td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total-pct">${pct(sum)}</td></tr>
+      </tbody></table>
+    <div id="ddl-status" style="font-size:12px;margin-top:10px;color:#DC2626;"></div>
+    <div id="ddl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
+    <div class="form-hint" style="margin-top:12px;">Closing Date is the sold date of the drawdown's initial batch. Amounts together must not exceed the issued pool size. Changes go through a ticket.</div>`;
+  ddLiveUpdate();
+}
+/* Checks, the "moves" note and the Save button, without rebuilding the inputs (keeps focus) */
+function ddLiveUpdate() {
+  const rows = ddLiveEdit ? ddLiveDraft : DD_LIVE;
+  const dates = rows.map(r => r.date).filter(Boolean);   // every date is optional; the checks run on the filled ones
+  const ordered = dates.every((x, i) => i === 0 || x > dates[i - 1]);
+  const first = ddLiveFirst(rows);
+  let bad = !ordered;
+  const pool = ISSUE.pool;
+  const sum = Math.round(rows.reduce((s, r) => s + r.amt, 0) * 100) / 100;
+  const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const pctOf = n => (pool > 0 ? (n / pool * 100).toFixed(2) : '0.00') + '%';
+  rows.forEach((r, i) => setT('ddl-pct-' + i, pctOf(r.amt)));
+  setT('ddl-total', sum); setT('ddl-total-pct', pctOf(sum));
+  const diff = Math.round((pool - sum) * 100) / 100;
+  const over = diff < 0;
+  if (over) bad = true;
+  rows.forEach((r, i) => {
+    const el = document.getElementById('ddl-msg-' + i);
+    let m = '';
+    if (ddLiveEdit && r.date) {
+      if (LC_LIVE.revEnd && r.date > LC_LIVE.revEnd) m = 'after Revolving End (' + lcFmt(lcParse(LC_LIVE.revEnd)) + ')';
+      else if (r.date === first && LC_LIVE.last && r.date > LC_LIVE.last) m = 'after Last Cutoff (' + lcFmt(lcParse(LC_LIVE.last)) + ')';
+    }
+    if (m) bad = true;
+    if (el) el.textContent = m;
+  });
+  const st = document.getElementById('ddl-status');
+  if (st) {
+    const parts = [];
+    if (ddLiveEdit && !ordered) parts.push('Initial Cutoff Dates must be in ascending order');
+    if (ddLiveEdit && over) parts.push("✗ Drawdowns exceed the issued pool size (" + pool + " USD'm) by " + Math.abs(diff) + " USD'm");
+    st.textContent = parts.join(' · ');
+    st.style.color = '#DC2626';
+    if (ddLiveEdit && !over && diff > 0 && !parts.length) { st.style.color = '#D97706'; st.textContent = '⚠ ' + diff + " USD'm of the issued pool is not scheduled yet"; }
+  }
+  const note = document.getElementById('ddl-shift');
+  if (note) {
+    const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
+    const moves = [];
+    if (ddLiveEdit) rows.forEach((r, i) => {
+      if (r.date !== DD_LIVE[i].date) moves.push('Drawdown ' + (i + 1) + ' Initial Cutoff Date ' + f(DD_LIVE[i].date) + ' → ' + f(r.date));
+      if (r.closing !== DD_LIVE[i].closing) moves.push('Drawdown ' + (i + 1) + ' Closing Date ' + f(DD_LIVE[i].closing) + ' → ' + f(r.closing));
+      if (r.amt !== DD_LIVE[i].amt) moves.push('Drawdown ' + (i + 1) + " Amount " + DD_LIVE[i].amt + ' → ' + r.amt + " USD'm");
+    });
+    note.style.display = moves.length ? '' : 'none';
+    note.textContent = moves.length ? '⚠ ' + moves.join(' · ') + '. Scheduled batches follow these changes.' : '';
+  }
+  const btn = document.getElementById('dd-live-save');
+  if (btn) { btn.disabled = !!bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : ''; }
+}
+function ddLiveSet(i, key, val) { ddLiveDraft[i][key] = key === 'amt' ? Math.max(0, parseFloat(val) || 0) : val; ddLiveUpdate(); }
+function ddLiveStart() { ddLiveDraft = DD_LIVE.map(r => Object.assign({}, r)); ddLiveEdit = true; ddLiveRender(); }
+function ddLiveCancel() { ddLiveEdit = false; ddLiveDraft = null; ddLiveRender(); }
+function ddLiveSave() {
+  let changed = 0;
+  ddLiveDraft.forEach((r, i) => { if (r.date !== DD_LIVE[i].date) changed++; if (r.closing !== DD_LIVE[i].closing) changed++; if (r.amt !== DD_LIVE[i].amt) changed++; });
+  const toast = document.getElementById('update-toast');
+  DD_LIVE = ddLiveDraft; ddLiveEdit = false; ddLiveDraft = null;
+  ddLiveRender();
+  lcLiveUpdate();
+  if (toast) {
+    toast.textContent = changed ? '✓ Drawdown Schedule change (' + changed + ' field' + (changed > 1 ? 's' : '') + ') submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit';
     toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200);
   }
 }
@@ -7247,7 +7370,15 @@ function s1Next() {
     if (trigger) trigger.style.borderColor = '';
   }
 
-  if (allFilled) {
+  // a failed Life cycle date check blocks Next
+  const lcBad = Object.values(lcRecalc()).some(Boolean);
+  if (allFilled && lcBad) {
+    const card = document.getElementById('lifecycle-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const toast = document.getElementById('update-toast');
+    if (toast) { toast.textContent = '✗ Fix the Life cycle dates before continuing'; toast.classList.add('visible'); setTimeout(() => { toast.classList.remove('visible'); }, 3200); }
+  }
+  if (allFilled && !lcBad) {
     // Tick step 1
     const tab = document.getElementById('tab-s1');
     tab.classList.remove('active');
@@ -8689,7 +8820,422 @@ function submitImportJson() {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
+
+/* ══ Import funder onboarding form (.xlsx) ══
+   Upload -> read every tab by its labels (not fixed rows) -> check -> report -> create a Draft funder.
+   Errors block the import. Warnings do not: the draft is created and the gaps are completed in the create flow.
+   Tab 5 (PM配置) is reference only and is not read. */
+let ifState = { step: 'upload', file: '', result: null, msg: '' };
+const IF_IMPORTED = {};   // funder name -> checked values, used to fill the create flow
+
+function ifNorm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function ifPick(v, list, syn) {                       // '' = blank, null = not recognised
+  const k = ifNorm(v); if (!k) return '';
+  if (syn && syn[k]) return syn[k];
+  return list.find(x => ifNorm(x) === k) || null;
+}
+function ifSplit(v) { return String(v || '').split(/[,;|\n]|\s&\s/).map(s => s.trim()).filter(Boolean); }
+function ifLists() {
+  const opts = id => [...document.querySelectorAll('#' + id + ' option')].map(o => o.textContent.trim()).filter(t => t && !/^select/i.test(t));
+  const tenors = [...document.querySelectorAll('#tenor-chips input')].map(i => i.value);
+  return {
+    scheme: opts('s1-funder-scheme'), product: opts('s1-product'), originator: opts('s1-originator'), license: opts('s1-license'),
+    loanType: [...document.querySelectorAll('#loanTypeDDMenu input')].map(i => i.value), tenors,
+    pricing: ['Accrued Interest', 'Cashflow Based'],
+    feeType: ['Daily Interest Discounted Rate', 'Monthly Interest Discounted Rate', 'Yearly Interest Discounted Rate'],
+    trafficDim: ['Target OS', 'Loan Count'], currency: ['Mil USD', 'Mil MYR', 'Mil THB'],
+    dayType: ['Business Days (T)', 'Calendar Days (D)'],
+    milestoneFrom: ['T (Cycle Start)', 'M1 Weekly Collection Start Date', 'M2 Weekly Collection End Date', 'M3 Weekly Collection Report Generation Date', 'M4 Weekly Batch Creation Date', 'M5 Weekly Collection Report Date', 'M6 Weekly Cutoff Date', 'M7 Weekly Sale Notice Date', 'M8 Weekly Sale Date', 'M9 Weekly Collection Deposit Date'],
+    opsFlow: { thabsnonnet: 'abs', thabsnet: 'abs-net', thabl: 'abl', myabsgross: 'my' },
+    opsRegion: { abs: 'TH', 'abs-net': 'TH', abl: 'TH', my: 'MY' }
+  };
+}
+function ifMatchRule(desc, vals) {
+  const clean = String(desc).replace(/\s+x+$/i, '').trim();
+  let c = RL_RULES.filter(r => r.label.toLowerCase() === clean.toLowerCase());
+  if (!c.length) c = RL_RULES.filter(r => ifNorm(r.label) === ifNorm(clean));
+  if (!c.length || !String(vals || '').trim()) return { cands: c, matched: c };
+  const n = String(vals).replace(/[\[\]]/g, '').split(/[,;]|\s+to\s+/).map(s => s.trim()).filter(Boolean);
+  const m = c.filter(r => r.type === 'range' ? (+n[0] === +r.v1 && +n[1] === +r.v2) : r.type === 'single' ? (+n[0] === +r.v1) : ifNorm(r.v1) === ifNorm(vals));
+  return { cands: c, matched: m };
+}
+function ifExistingFunders() {
+  return [...document.querySelectorAll('#flow-list .lender-table tbody tr')].map(tr => {
+    const td = tr.querySelectorAll('td');
+    return { name: (td[3] || {}).textContent ? td[3].textContent.trim() : '', status: (td[4] || {}).textContent ? td[4].textContent.trim() : '' };
+  }).filter(f => f.name);
+}
+
+/* sheet <-> rows (index = Excel row - 1) */
+function ifSheetRows(ws) {
+  const rng = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '', dateNF: 'yyyy-mm-dd' });
+  const pad = Array.from({ length: rng.s.c }, () => '');
+  return Array.from({ length: rng.s.r }, () => []).concat(rows.map(r => pad.concat(r)));
+}
+function ifCellsToRows(cells) {
+  const rows = [];
+  Object.keys(cells).forEach(ref => {
+    const m = /^([A-Z]+)(\d+)$/.exec(ref); if (!m) return;
+    const c = m[1].split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1, r = +m[2] - 1;
+    while (rows.length <= r) rows.push([]);
+    for (let i = rows[r].length; i < c; i++) rows[r][i] = '';
+    rows[r][c] = cells[ref];
+  });
+  return rows.map(r => r || []);
+}
+function ifKV(rows, label) {
+  const k = label.toLowerCase();
+  for (let i = 0; i < rows.length; i++) {
+    const a = String((rows[i] || [])[0] == null ? '' : rows[i][0]).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (a === k) return { v: String(rows[i][1] == null ? '' : rows[i][1]).trim(), ref: 'B' + (i + 1), found: true };
+  }
+  return { v: '', ref: '', found: false };
+}
+function ifTable(rows, h0, h1, stop) {
+  const hi = rows.findIndex(r => ifNorm((r || [])[0]) === ifNorm(h0) && ifNorm((r || [])[1]) === ifNorm(h1));
+  if (hi < 0) return null;
+  const out = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (stop.test(String(r[0] == null ? '' : r[0]).trim())) break;
+    out.push({ r, n: i + 1 });
+  }
+  return out;
+}
+
+/* the checks */
+function ifCheck(tabs) {
+  const L = ifLists(), issues = [], draft = {}, counts = {};
+  const add = (tab, ref, sev, msg) => issues.push({ tab, ref: ref || '', sev, msg });
+  const need = (tab, kv, label) => { if (!kv.found) { add(tab, '', 'error', 'Label "' + label + '" not found. Is this the latest form template?'); return false; } return true; };
+  const col = (r, i) => String(r[i] == null ? '' : r[i]).trim();
+  const filled = r => r.some(x => String(x == null ? '' : x).trim() && !/^(enable|disable|draft|yes|no|☐|☑)$/i.test(String(x).trim()));
+
+  // ── 1. Basic Info ──
+  const T1 = '1. Basic Info', b = tabs.basic;
+  if (!b) add(T1, '', 'error', 'Tab not found');
+  else {
+    const g = l => { const kv = ifKV(b, l); need(T1, kv, l); return kv; };
+    const region = g('Region'), name = g('Funder Name'), scheme = g('Funder Scheme'), product = g('Product'), loan = g('Loan Type (MY only)'),
+      orig = g('Originator'), inv = g('Investor'), lic = g('License (TH only)'), ten = g('Supported Tenors'), spv = g('SPV Name'), tr = g('Tranche');
+    const reg = ifPick(region.v, ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
+    if (reg === null) add(T1, region.ref, 'error', '"' + region.v + '" is not a region. Use MY or TH.'); else if (!reg && region.found) add(T1, region.ref, 'warn', 'Region is empty. It is needed to build the funder name.');
+    draft.region = reg || '';
+    const pick = (kv, list, label, syn) => { const v = ifPick(kv.v, list, syn); if (v === null) add(T1, kv.ref, 'error', '"' + kv.v + '" is not a valid ' + label + '. Use ' + list.join(' | ') + '.'); else if (!v && kv.found) add(T1, kv.ref, 'warn', label + ' is empty (compulsory before Mark Ready).'); return v || ''; };
+    draft.scheme = pick(scheme, L.scheme, 'Funder Scheme');
+    draft.product = pick(product, L.product, 'Product');
+    draft.originator = pick(orig, L.originator, 'Originator', { seamoney: 'Monee' });
+    draft.investor = inv.v; if (!inv.v && inv.found) add(T1, inv.ref, 'warn', 'Investor is empty (compulsory before Mark Ready).');
+    const lts = ifSplit(loan.v), lcodes = [];
+    lts.forEach(x => { const v = ifPick(x, L.loanType); if (v === null) add(T1, loan.ref, 'error', '"' + x + '" is not a loan type. Use ' + L.loanType.join(' | ') + '.'); else lcodes.push(v); });
+    draft.loanTypes = lcodes;
+    if (reg === 'TH' && lts.length) add(T1, loan.ref, 'warn', 'Loan Type is MY only, so it is ignored for a TH funder.');
+    if (reg === 'MY' && !lts.length) add(T1, loan.ref, 'warn', 'Loan Type is compulsory for a MY funder.');
+    draft.license = pick(lic, L.license, 'License'); 
+    if (reg === 'MY' && lic.v) { add(T1, lic.ref, 'warn', 'License is TH only, so it is ignored for a MY funder.'); draft.license = ''; }
+    if (reg === 'TH' && !lic.v) add(T1, lic.ref, 'warn', 'License is compulsory for a TH funder.');
+    const tl = ifSplit(ten.v).map(x => x.toUpperCase()), tok = [];
+    tl.forEach(x => { if (L.tenors.includes(x)) tok.push(x); else add(T1, ten.ref, 'error', '"' + x + '" is not a supported tenor. Use ' + L.tenors.join(' | ') + '.'); });
+    if (!tl.length && ten.found) add(T1, ten.ref, 'warn', 'Supported Tenors is empty (compulsory before Mark Ready).');
+    draft.tenors = tok;
+    draft.spv = spv.v; draft.tranche = tr.v ? (/^\d+$/.test(tr.v) ? tr.v.padStart(2, '0') : tr.v) : '';
+    if (!spv.v && spv.found) add(T1, spv.ref, 'warn', 'SPV Name is empty (compulsory before Mark Ready).');
+    if (!tr.v && tr.found) add(T1, tr.ref, 'warn', 'Tranche is empty (compulsory before Mark Ready).');
+    draft.ar = { cutoffId: ifKV(b, 'Cutoff AR Task ID').v, cutoffName: ifKV(b, 'Cutoff AR Task Name').v, cutoffKey: ifKV(b, 'Cutoff AR Transify Key').v,
+      clawId: ifKV(b, 'Clawback AR Task ID').v, clawName: ifKV(b, 'Clawback AR Task Name').v, clawKey: ifKV(b, 'Clawback AR Transify Key').v };
+    // funder name: derived when blank, then checked against every existing funder
+    const parts = [draft.region, draft.product, draft.spv, draft.scheme, draft.tranche];
+    const derived = parts.every(Boolean) ? parts.join('_') : '';
+    draft.nameDerived = !name.v && !!derived;
+    draft.name = name.v || derived;
+    if (!draft.name) add(T1, name.ref, 'error', 'Funder Name is empty and cannot be built yet. It needs Region, Product, SPV Name, Funder Scheme and Tranche.');
+    else {
+      if (draft.nameDerived) add(T1, name.ref, 'info', 'Funder Name was blank, so it is built as Region_Product_SPV_Scheme_Tranche: ' + draft.name + '.');
+      else if (derived && derived !== name.v) add(T1, name.ref, 'warn', 'Funder Name differs from the naming rule (' + derived + ').');
+      if (!/^[A-Za-z0-9_.\-]+$/.test(draft.name)) add(T1, name.ref, 'error', 'Funder Name may only contain letters, digits, _ - and .');
+      const dup = ifExistingFunders().find(f => ifNorm(f.name) === ifNorm(draft.name));
+      if (dup) add(T1, name.ref, 'error', 'A funder named "' + dup.name + '" already exists (' + dup.status + '). Funder names must be unique.');
+    }
+  }
+
+  // ── 2. Portfolio Setting ──
+  const T2 = '2. Portfolio Setting', pt = tabs.port;
+  if (!pt) add(T2, '', 'error', 'Tab not found');
+  else {
+    const g = l => { const kv = ifKV(pt, l); need(T2, kv, l); return kv; };
+    const pr = g('Pricing Mode'), mc = g('Manual Clawback Mode'), ac = g('Auto Clawback Enabled'), am = g('Auto Clawback Mode'), nn = g('N Input (Mode 2 only)');
+    const pv = ifPick(pr.v, L.pricing);
+    if (pv === null) add(T2, pr.ref, 'error', '"' + pr.v + '" is not a pricing mode. Use Accrued Interest | Cashflow Based.'); else if (!pv && pr.found) add(T2, pr.ref, 'warn', 'Pricing Mode is empty (compulsory before Mark Ready).');
+    draft.pricing = pv || '';
+    ifSplit(mc.v).forEach(x => { if (!/mode\s*[abc]/i.test(x)) add(T2, mc.ref, 'error', '"' + x + '" is not a manual clawback mode. Use Mode A | Mode B | Mode C.'); });
+    const acv = ifPick(ac.v, ['Yes', 'No']);
+    if (acv === null) add(T2, ac.ref, 'error', '"' + ac.v + '" is not Yes or No.'); else if (!acv && ac.found) add(T2, ac.ref, 'warn', 'Auto Clawback Enabled is empty (compulsory before Mark Ready).');
+    if (acv === 'Yes') {
+      const mm = /mode\s*([12])/i.exec(am.v);
+      if (!am.v) add(T2, am.ref, 'warn', 'Auto Clawback Mode is needed when Auto Clawback is Yes.');
+      else if (!mm) add(T2, am.ref, 'error', '"' + am.v + '" is not an auto clawback mode. Use Mode 1 | Mode 2.');
+      if (mm && mm[1] === '2' && nn.v && !(+nn.v > 0)) add(T2, nn.ref, 'error', 'N must be a number above 0 (default 1).');
+    }
+    // fee config
+    const fees = ifTable(pt, '#', 'Fee Type', /^[C-E]\.\s/) || [], seen = {}; let nf = 0;
+    fees.forEach(({ r, n }) => {
+      if (!filled(r)) return; nf++;
+      const ft = col(r, 1), tn = col(r, 2), gp = col(r, 3), val = col(r, 4), eff = col(r, 5);
+      if (!L.feeType.some(x => ifNorm(x) === ifNorm(ft))) add(T2, 'B' + n, 'error', 'Fee Type "' + ft + '" is not valid. Use ' + L.feeType.join(' | ') + '.');
+      const tk = tn.toUpperCase();
+      if (tk !== 'DEFAULT' && !L.tenors.includes(tk)) add(T2, 'C' + n, 'error', 'Tenor "' + tn + '" is not valid.');
+      else if (tk !== 'DEFAULT' && draft.tenors && draft.tenors.length && !draft.tenors.includes(tk)) add(T2, 'C' + n, 'error', 'Tenor ' + tn + ' is not in Supported Tenors (' + draft.tenors.join(', ') + ').');
+      if (!(val !== '' && !isNaN(parseFloat(val.replace('%', ''))))) add(T2, 'E' + n, 'error', 'Value "' + val + '" is not a number.');
+      if (!eff) add(T2, 'F' + n, 'warn', 'Effective Date & Time is empty.'); else if (isNaN(Date.parse(eff.replace(' ', 'T')))) add(T2, 'F' + n, 'error', 'Effective Date & Time "' + eff + '" is not a valid date.');
+      const key = [ifNorm(ft), tk, ifNorm(gp), eff].join('|');
+      if (seen[key]) add(T2, 'B' + n, 'error', 'Duplicate of row ' + seen[key] + ' (same fee type, tenor, target group and effective time).'); else seen[key] = n;
+    });
+    counts.fees = nf;
+    // rule list: matched to the Rule Library
+    const rules = ifTable(pt, 'Rule ID', 'Rule Description', /^[D-E]\.\s/) || []; let nr = 0; draft.ruleIds = [];
+    rules.forEach(({ r, n }) => {
+      const ds = col(r, 1); if (!ds) return; nr++;
+      const m = ifMatchRule(ds, col(r, 2));
+      if (!m.cands.length) add(T2, 'B' + n, 'error', 'Rule "' + ds + '" is not in the Rule Library.');
+      else if (!m.matched.length) add(T2, 'C' + n, 'error', 'No library rule "' + ds.replace(/\s+x+$/i, '') + '" has the value "' + col(r, 2) + '". Ask dev to add it.');
+      else if (m.matched.length > 1) { add(T2, 'B' + n, 'warn', '"' + ds + '" matches several library rules (' + m.matched.map(x => x.id).join(', ') + '). Pick one in the draft.'); }
+      else draft.ruleIds.push(m.matched[0].id);
+      const st = col(r, 3); if (st && !/^(enable|disable)$/i.test(st)) add(T2, 'D' + n, 'error', 'Status "' + st + '" must be Enable or Disable.');
+    });
+    counts.rules = nr;
+    // traffic control
+    const tcs = ifTable(pt, 'Rule ID', 'Traffic Description', /^E\.\s/) || [], tseen = {}; let nt = 0;
+    tcs.forEach(({ r, n }) => {
+      const dm = col(r, 2); if (!dm) return; nt++;
+      if (!L.trafficDim.some(x => ifNorm(x) === ifNorm(dm))) add(T2, 'C' + n, 'error', 'Dimension "' + dm + '" is not valid. Use ' + L.trafficDim.join(' | ') + '.');
+      const tn = col(r, 3).toUpperCase();
+      if (tn && tn !== 'DEFAULT' && !L.tenors.includes(tn)) add(T2, 'D' + n, 'error', 'Tenor "' + col(r, 3) + '" is not valid.');
+      else if (tn && tn !== 'DEFAULT' && draft.tenors && draft.tenors.length && !draft.tenors.includes(tn)) add(T2, 'D' + n, 'error', 'Tenor ' + col(r, 3) + ' is not in Supported Tenors (' + draft.tenors.join(', ') + ').');
+      const key = ifNorm(dm) + '|' + tn; if (tseen[key]) add(T2, 'C' + n, 'error', 'Duplicate of row ' + tseen[key] + ' (same dimension and tenor).'); else tseen[key] = n;
+    });
+    counts.traffic = nt;
+    // issue size
+    const pool = g('Issued Pool Size'), cur = g('Currency'), sen = g('Senior Tranche Size (USD m)');
+    const num = (kv, label) => { if (!kv.v) { if (kv.found) add(T2, kv.ref, 'warn', label + ' is empty (compulsory before Mark Ready).'); return null; } if (isNaN(+kv.v)) { add(T2, kv.ref, 'error', label + ' "' + kv.v + '" is not a number.'); return null; } if (+kv.v < 0) { add(T2, kv.ref, 'error', label + ' must be 0 or more.'); return null; } return +kv.v; };
+    const pn = num(pool, 'Issued Pool Size'), sn = num(sen, 'Senior Tranche Size');
+    if (pn !== null && pn <= 0) add(T2, pool.ref, 'error', 'Issued Pool Size must be above 0.');
+    if (pn !== null && sn !== null && sn > pn) add(T2, sen.ref, 'error', 'Senior Tranche Size (' + sn + ') is more than the Issued Pool Size (' + pn + ').');
+    const cu = ifPick(cur.v, L.currency); if (cu === null) add(T2, cur.ref, 'error', '"' + cur.v + '" is not a currency. Use ' + L.currency.join(' | ') + '.'); else if (!cu && cur.found) add(T2, cur.ref, 'warn', 'Currency is empty (compulsory before Mark Ready).');
+    draft.pool = pn; draft.senior = sn; draft.currency = cu || '';
+  }
+
+  // ── 3. Management Plan ──
+  const T3 = '3. Management Plan', pl = tabs.plan;
+  if (!pl) add(T3, '', 'error', 'Tab not found');
+  else {
+    const g = l => { const kv = ifKV(pl, l); need(T3, kv, l); return kv; };
+    const tn = g('Template Name'), of = g('Ops Flow'), rg = g('Region'), rs = g('Revolving Start Date'), dt = g('Offset Day Type');
+    const ofk = of.v ? ifPick(of.v, [], L.opsFlow) : '';
+    if (of.v && !ofk) add(T3, of.ref, 'error', '"' + of.v + '" is not an ops flow. Use TH ABS Non Net | TH ABS Net | TH ABL | MY ABS Gross.'); else if (!of.v && of.found) add(T3, of.ref, 'warn', 'Ops Flow is empty (compulsory before Mark Ready).');
+    draft.opsFlow = ofk || '';
+    const rg3 = ifPick(rg.v, ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
+    if (rg3 === null) add(T3, rg.ref, 'error', '"' + rg.v + '" is not a region. Use Thailand (TH) | Malaysia (MY).');
+    if (rg3 && draft.region && rg3 !== draft.region) add(T3, rg.ref, 'error', 'Region here is ' + rg3 + ' but Basic Info says ' + draft.region + '.');
+    if (ofk && draft.region && L.opsRegion[ofk] !== draft.region) add(T3, of.ref, 'error', 'Ops Flow "' + of.v + '" is a ' + L.opsRegion[ofk] + ' flow but the funder region is ' + draft.region + '.');
+    if (tn.v) {
+      const names = Object.keys(WFT_DATA).map(k => WFT_DATA[k].name);
+      if (!names.some(x => ifNorm(x) === ifNorm(tn.v))) add(T3, tn.ref, 'warn', 'No Workflow Template named "' + tn.v + '" exists. Pick one in Module 3, or create it first under Workflow Template.');
+    }
+    if (rs.v) { if (!/^\d{4}-\d{2}-\d{2}$/.test(rs.v) || isNaN(Date.parse(rs.v))) add(T3, rs.ref, 'error', 'Revolving Start Date "' + rs.v + '" must be a date like 2026-11-01.'); else draft.revolvingStart = rs.v; }
+    if (dt.v && ifPick(dt.v, L.dayType, { calendardayst: 'Calendar Days (D)' }) === null) add(T3, dt.ref, 'error', '"' + dt.v + '" is not a day type. Use Business Days (T) | Calendar Days (D).');
+    // cycle segments must run 1..EOM with no gap or overlap
+    const segs = ifTable(pl, 'Cycle #', 'Start Day', /^C\.\s|^Type$/) || [], sg = [];
+    segs.forEach(({ r, n }) => { if (col(r, 1) === '' && col(r, 2) === '') return; sg.push({ n, s: +col(r, 1), e: /^eom$/i.test(col(r, 2)) ? 31 : +col(r, 2), eom: /^eom$/i.test(col(r, 2)) }); });
+    sg.forEach((x, i) => {
+      if (isNaN(x.s) || isNaN(x.e)) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' needs a numeric Start Day and an End Day (or EOM).');
+      else if (x.e < x.s) add(T3, 'C' + x.n, 'error', 'Cycle ' + (i + 1) + ' ends before it starts.');
+      else if (i === 0 && x.s !== 1) add(T3, 'B' + x.n, 'error', 'The first cycle must start on day 1.');
+      else if (i > 0 && !isNaN(sg[i - 1].e) && x.s !== sg[i - 1].e + 1) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' starts on day ' + x.s + ' but the previous cycle ends on day ' + (sg[i - 1].eom ? 'EOM' : sg[i - 1].e) + '. Cycles must be continuous.');
+    });
+    if (sg.length && !sg[sg.length - 1].eom) add(T3, 'C' + sg[sg.length - 1].n, 'error', 'The last cycle must end on EOM.');
+    counts.segments = sg.length;
+    // milestones
+    const ms = ifTable(pl, '#', 'Milestone', /^Legend/) || []; let nm = 0, blank = 0;
+    ms.forEach(({ r, n }) => {
+      if (!col(r, 0)) return;
+      const nm_ = col(r, 1), from = col(r, 3), off = col(r, 4);
+      if (!nm_ && !off) { blank++; return; } nm++;
+      if (from && !L.milestoneFrom.some(x => ifNorm(x) === ifNorm(from))) add(T3, 'D' + n, 'error', 'Offset from "' + from + '" is not a valid milestone.');
+      if (off !== '' && !/^\d+$/.test(off)) add(T3, 'E' + n, 'error', 'Offset (days) "' + off + '" must be a whole number.');
+      if (!nm_) add(T3, 'B' + n, 'warn', 'Milestone ' + col(r, 0) + ' has an offset but no name.');
+    });
+    if (!nm && blank) add(T3, '', 'warn', 'The milestone table is empty. The milestones come from the Ops Flow template.');
+    counts.milestones = nm;
+  }
+
+  // ── 4. Report Management ──
+  const T4 = '4. Report Management', rp = tabs.report;
+  if (!rp) add(T4, '', 'error', 'Tab not found');
+  else {
+    const files = ifTable(rp, 'File Type', 'If Sync by Funding', /^Legend/) || []; let ny = 0;
+    files.forEach(({ r, n }) => { const ft = col(r, 0), v = col(r, 1); if (!ft) return; if (/^(yes|y|☑)$/i.test(v)) ny++; else if (!/^(no|n|☐)$/i.test(v)) add(T4, 'B' + n, 'error', '"' + v + '" must be Yes or No for ' + ft + '.'); });
+    counts.sync = ny;
+  }
+  return { issues, draft, counts };
+}
+
+/* sample forms: the same cell positions as the real template, so they go through the same reader */
+function ifSampleTabs(kind) {
+  const bad = kind === 'errors';
+  const t1 = { A5: 'Region', B5: bad ? 'MY' : 'TH', A6: 'Funder Name', B6: bad ? 'TH_SPL_Allstar_ABS_01' : '', A7: 'Funder Scheme', B7: 'ABS', A8: 'Product', B8: bad ? 'Personal Loan' : 'BCL',
+    A9: 'Loan Type (MY only)', B9: '', A10: 'Originator', B10: 'Seamoney', A11: 'Investor', B11: bad ? '' : 'JPM', A12: 'License (TH only)', B12: 'CCC',
+    A13: 'Supported Tenors', B13: bad ? '1M, 3M, 7M, 60M' : '1M, 2M, 3M, 6M, 12M', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
+    A20: 'Cutoff AR Task ID', B20: 'AR-2026-00123', A21: 'Cutoff AR Task Name', B21: 'Cutoff AR Task', A22: 'Cutoff AR Transify Key', B22: 'cutoff_ar_send',
+    A23: 'Clawback AR Task ID', B23: 'AR-2026-00456', A24: 'Clawback AR Task Name', B24: 'Clawback AR Task', A25: 'Clawback AR Transify Key', B25: 'clawback_ar_send' };
+  const t2 = { A5: 'Pricing Mode', B5: 'Accrued Interest', A6: 'Manual Clawback Mode', B6: 'Mode A: Standard osp + accrued i', A7: 'Auto Clawback Enabled', B7: 'Yes', A8: 'Auto Clawback Mode', B8: 'Mode 1 (Accrued to Restructure Date)', A9: 'N Input (Mode 2 only)', B9: '',
+    A11: 'B. Funder Fee Config', A12: '#', B12: 'Fee Type', C12: 'Tenor', D12: 'Target Group', E12: 'Value', F12: 'Effective Date & Time', G12: 'Updated By',
+    A13: 1, B13: 'Monthly Interest Discounted Rate', C13: '12M', D13: 'Normal User', E13: '1.5', F13: '2026-11-01 00:00',
+    A14: 2, B14: 'Monthly Interest Discounted Rate', C14: bad ? '36M' : '6M', D14: 'Normal User', E14: '1.2', F14: '2026-11-01 00:00',
+    A21: 'C. Rule List', A22: 'Rule ID', B22: 'Rule Description', C22: 'Values', D22: 'Status',
+    A23: 1, B23: bad ? 'Foo bar rule' : 'Outstanding Principal in range', C23: '0.01,99999999', D23: 'Enable',
+    A24: 2, B24: bad ? 'User Current Max DPD LessEqual xx' : 'Loan Current Max DPD LessEqual xx', C24: '0', D24: 'Enable',
+    A25: 3, B25: 'Reject Loan With Refund Request', D25: 'Enable',
+    A31: 'D. Traffic Control', A32: 'Rule ID', B32: 'Traffic Description', C32: 'Dimension', D32: 'Tenor', E32: 'Status',
+    A33: 1, B33: 'Target OS traffic control', C33: 'Target OS', D33: 'Default', E33: 'Enable',
+    A34: 2, B34: 'Target OS traffic control', C34: 'Target OS', D34: bad ? '2M' : '3M', E34: 'Enable',
+    A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 'Mil USD', A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107 };
+  if (bad) { t2.A15 = 3; t2.B15 = 'Monthly Interest Discounted Rate'; t2.C15 = '12M'; t2.D15 = 'Normal User'; t2.E15 = '1.5'; t2.F15 = '2026-11-01 00:00'; }
+  const t3 = { A6: 'Template Name', B6: '', A7: 'Ops Flow', B7: bad ? 'TH ABS Net' : 'TH ABS Non Net', A9: 'Region', B9: bad ? 'Thailand (TH)' : 'Thailand (TH)',
+    A14: 'B. Cycle Segments', A15: 'Cycle #', B15: 'Start Day', C15: 'End Day',
+    A16: 1, B16: 1, C16: 5, A17: 2, B17: 6, C17: 15, A18: 3, B18: bad ? 17 : 16, C18: 25, A19: 4, B19: 26, C19: 'EOM',
+    A21: 'C. Plan Anchor Dates', A22: 'Type', A23: 'Revolving Start Date', B23: bad ? 'next Monday' : '2026-11-01',
+    A25: 'D. Milestone Configuration', A26: 'Offset Day Type', B26: 'Business Days (T)', A28: '#', B28: 'Milestone', C28: 'Type', D28: 'Offset from', E28: 'Offset (days)',
+    A29: 1, B29: bad ? '' : 'Weekly Collection Start Date', C29: 'Operation', D29: 'T (Cycle Start)', E29: bad ? '' : 1, A30: 2, B30: bad ? '' : 'Weekly Collection End Date', C30: 'Operation', D30: 'M2 Weekly Collection End Date', E30: bad ? '' : 0, A40: 'Legend' };
+  const t4 = { A16: 'Data Files & Reports', A17: 'File Type', B17: 'If Sync by Funding', A18: 'Pending Sold Loan Tape', B18: 'Yes', A19: 'Revolving Period Sale Notice', B19: 'Yes', A20: 'Servicer Report', B20: 'Yes', A27: 'Legend' };
+  return { basic: ifCellsToRows(t1), port: ifCellsToRows(t2), plan: ifCellsToRows(t3), report: ifCellsToRows(t4) };
+}
+
+/* modal */
+function ifOpen() { ifState = { step: 'upload', file: '', result: null, msg: '' }; ifRender(); document.getElementById('import-form-modal').classList.add('open'); }
+function ifClose() { document.getElementById('import-form-modal').classList.remove('open'); }
+function ifBack() { ifState = { step: 'upload', file: '', result: null, msg: '' }; ifRender(); }
+function ifRun(tabs, fileName) { ifState = { step: 'report', file: fileName, result: ifCheck(tabs), msg: '' }; ifRender(); }
+function ifSample(kind) { ifRun(ifSampleTabs(kind), kind === 'errors' ? 'sample-form-with-errors.xlsx' : 'sample-form-clean.xlsx'); }
+function ifLoadXlsx() {
+  return new Promise((res, rej) => {
+    if (window.XLSX) return res();
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => res(); s.onerror = () => rej(new Error('load')); document.head.appendChild(s);
+  });
+}
+function ifFile(f) {
+  if (!f) return;
+  if (!/\.xlsx$/i.test(f.name)) { ifState.msg = 'Please choose an .xlsx file (the ABS Funder Onboarding Form).'; ifRender(); return; }
+  ifState.msg = 'Reading ' + f.name + '…'; ifRender();
+  ifLoadXlsx().then(() => f.arrayBuffer()).then(buf => {
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const find = re => { const n = wb.SheetNames.find(x => re.test(x.trim())); return n ? ifSheetRows(wb.Sheets[n]) : null; };
+    ifRun({ basic: find(/^1\./), port: find(/^2\./), plan: find(/^3\./), report: find(/^4\./) }, f.name);
+  }).catch(() => { ifState.msg = 'Could not read the file. Check that it is a valid .xlsx and that you are online (the reader loads on demand), or try a sample.'; ifRender(); });
+}
+function ifRender() {
+  const body = document.getElementById('if-body'), foot = document.getElementById('if-footer');
+  if (!body || !foot) return;
+  if (ifState.step === 'upload') {
+    body.innerHTML = `<div class="if-drop" id="if-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="event.preventDefault();this.classList.remove('over');ifFile(event.dataTransfer.files[0])">
+        <svg width="34" height="34" fill="none" stroke="#94A3B8" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-size:14px;font-weight:600;color:#111827;margin-top:8px;">Drop the filled form here</div>
+        <div style="font-size:12px;color:#6B7280;margin:4px 0 14px;">ABS Funder Onboarding Form (.xlsx). Tabs 1 to 4 are read. The PM配置 tab is ignored.</div>
+        <button class="btn-primary" onclick="document.getElementById('if-file').click()">Choose file</button>
+        <input type="file" id="if-file" accept=".xlsx" style="display:none" onchange="ifFile(this.files[0])" />
+      </div>
+      ${ifState.msg ? `<div style="font-size:12px;color:${/^Reading/.test(ifState.msg) ? '#6B7280' : '#DC2626'};margin-top:10px;">${ecEsc(ifState.msg)}</div>` : ''}
+      <div style="font-size:12px;color:#6B7280;margin-top:16px;">No file to hand? Try a sample:
+        <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('clean')">Clean form</button> ·
+        <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('errors')">Form with errors</button></div>
+      <div style="font-size:12px;color:#9CA3AF;margin-top:14px;line-height:1.6;">What is checked: the file structure and labels, every dropdown value, numbers and dates, conditional fields (Region, Auto Clawback), tenors against Supported Tenors, rules against the Rule Library, cycle segments, and the funder name against every existing funder.</div>`;
+    foot.innerHTML = `<button class="btn-outline-sm" style="margin-left:auto;padding:8px 22px;font-size:13px;" onclick="ifClose()">Cancel</button>`;
+    return;
+  }
+  const r = ifState.result, d = r.draft, errs = r.issues.filter(i => i.sev === 'error'), warns = r.issues.filter(i => i.sev === 'warn');
+  const tabs = ['1. Basic Info', '2. Portfolio Setting', '3. Management Plan', '4. Report Management'];
+  const v = x => (x === undefined || x === null || x === '' || (Array.isArray(x) && !x.length)) ? '<span style="color:#D1D5DB;">—</span>' : ecEsc(Array.isArray(x) ? x.join(', ') : x);
+  const flowName = { abs: 'Flow A · ABS Gross', 'abs-net': 'Flow B · ABS Net', abl: 'Flow C · ABL', my: 'Flow D · MY ABS Gross' };
+  const prev = [['Funder name', d.name ? ecEsc(d.name) + (d.nameDerived ? ' <span class="if-chip" style="background:#EFF6FF;color:#1D4ED8;font-size:10px;">built</span>' : '') : v('')], ['Region', v(d.region)], ['Scheme', v(d.scheme)], ['Product', v(d.product)],
+    ['Originator', v(d.originator)], ['Investor', v(d.investor)], [d.region === 'MY' ? 'Loan type' : 'License', v(d.region === 'MY' ? d.loanTypes : d.license)], ['Supported tenors', v(d.tenors)],
+    ['SPV · Tranche', v([d.spv, d.tranche].filter(Boolean).join(' · '))], ['Pricing mode', v(d.pricing)], ['Issued pool', d.pool != null ? ecEsc(d.pool + ' ' + (d.currency || '')) : v('')], ['Senior tranche', v(d.senior)],
+    ['Ops flow', v(flowName[d.opsFlow])], ['Revolving start', v(d.revolvingStart)], ['Rules from library', v(d.ruleIds && d.ruleIds.length ? d.ruleIds.join(', ') : '')],
+    ['Rows read', ecEsc((r.counts.fees || 0) + ' fee · ' + (r.counts.rules || 0) + ' rule · ' + (r.counts.traffic || 0) + ' traffic')]];
+  const groups = tabs.map(t => {
+    const list = r.issues.filter(i => i.tab === t).sort((a, b) => ({ error: 0, warn: 1, info: 2 }[a.sev] - { error: 0, warn: 1, info: 2 }[b.sev]));
+    const e = list.filter(i => i.sev === 'error').length, w = list.filter(i => i.sev === 'warn').length;
+    const status = e || w ? (e ? `<span style="color:#DC2626;">${e} error${e > 1 ? 's' : ''}</span>` : '') + (e && w ? ' · ' : '') + (w ? `<span style="color:#D97706;">${w} warning${w > 1 ? 's' : ''}</span>` : '') : '<span style="color:#16A34A;">✓ No issues</span>';
+    return `<div class="if-tab"><div class="if-tab-hd"><span>${t}</span><span style="font-size:12px;">${status}</span></div>${list.map(i => `<div class="if-issue"><span class="if-sev" style="color:${i.sev === 'error' ? '#DC2626' : i.sev === 'warn' ? '#D97706' : '#2563EB'};">${i.sev === 'error' ? '✗' : i.sev === 'warn' ? '⚠' : 'ⓘ'}</span><span class="ec-code" style="min-width:64px;">${i.ref ? ecEsc(i.ref) : '—'}</span><span>${ecEsc(i.msg)}</span></div>`).join('')}</div>`;
+  }).join('');
+  body.innerHTML = `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:13px;color:#374151;">📄 <b>${ecEsc(ifState.file)}</b></span>
+      <span class="if-chip" style="background:${errs.length ? '#FEE2E2' : '#F3F4F6'};color:${errs.length ? '#DC2626' : '#9CA3AF'};">${errs.length} error${errs.length === 1 ? '' : 's'}</span>
+      <span class="if-chip" style="background:${warns.length ? '#FEF3C7' : '#F3F4F6'};color:${warns.length ? '#B45309' : '#9CA3AF'};">${warns.length} warning${warns.length === 1 ? '' : 's'}</span>
+      ${errs.length ? '<span style="font-size:12px;color:#DC2626;">Fix the errors in the form and upload it again. A draft cannot be created yet.</span>' : '<span style="font-size:12px;color:#16A34A;font-weight:600;">✓ Ready to create a Draft funder' + (warns.length ? '. Warnings are completed in the create flow.' : '.') + '</span>'}
+    </div>
+    <div class="if-prev">${prev.map(([k, x]) => `<div><div class="k">${k}</div><div class="v">${x}</div></div>`).join('')}</div>
+    ${groups}
+    <div style="font-size:11px;color:#9CA3AF;margin-top:4px;">Mock: rules, fee config and traffic control rows are checked here but not added to the draft's tables in this prototype.</div>`;
+  foot.innerHTML = `<button class="btn-outline-sm" style="padding:8px 20px;font-size:13px;" onclick="ifBack()">← Choose another file</button>
+    <button class="btn-outline-sm" style="margin-left:auto;padding:8px 22px;font-size:13px;" onclick="ifClose()">Cancel</button>
+    <button class="btn-primary-lg" style="font-size:13px;padding:8px 22px;${errs.length ? 'opacity:.45;cursor:not-allowed;' : ''}" ${errs.length ? 'disabled' : ''} onclick="ifCreateDraft()">Create draft funder</button>`;
+}
+
+/* create the draft: add it to the Lender List and open it in the create flow, filled in */
+function ifCreateDraft() {
+  const r = ifState.result; if (!r || r.issues.some(i => i.sev === 'error')) return;
+  const d = r.draft, warns = r.issues.filter(i => i.sev === 'warn').length;
+  IF_IMPORTED[d.name] = d;
+  DRAFT_SAVED[d.name] = { scheme: d.scheme, product: d.product, originator: d.originator, investor: d.investor };
+  const tbody = document.querySelector('#flow-list .lender-table tbody');
+  const ops = { abs: 'ABS', 'abs-net': 'ABS Net', abl: 'ABL', my: 'ABS' }[d.opsFlow] || d.scheme || 'ABS';
+  const n = tbody.rows.length + 1, id = 1200000 + Math.floor(Math.random() * 90000), now = new Date(), p2 = x => String(x).padStart(2, '0');
+  const ts = now.getFullYear() + '-' + p2(now.getMonth() + 1) + '-' + p2(now.getDate()) + ' ' + p2(now.getHours()) + ':' + p2(now.getMinutes()) + ':' + p2(now.getSeconds());
+  const tr = document.createElement('tr'); tr.id = 'lrow-imp-' + id;
+  tr.innerHTML = `<td style="padding:11px 10px 11px 16px;"><input type="checkbox" class="row-chk" data-ops="${ops}" data-status="DRAFT" onchange="onRowCheck(this,'${d.name}','${ops}')" /></td>
+    <td class="num-col">${n}</td><td class="num-col">${id}</td><td style="font-weight:500;">${d.name}</td>
+    <td><span class="status-badge" style="background:#F3F4F6;color:#6B7280;">DRAFT</span></td>
+    <td><span style="font-size:11px;font-weight:600;color:#1D4ED8;background:#DBEAFE;padding:2px 7px;border-radius:4px;">${ops}</span></td>
+    <td><span class="scheme-badge">${d.scheme || '—'}</span></td><td style="color:#9CA3AF;font-size:12px;">${ts}</td>
+    <td><div class="tbl-actions"><button class="tbl-act-link" onclick="editDraft('${d.name}')">Edit</button><span class="tbl-act-sep">|</span><div class="more-dd-wrap" id="more-imp-${id}"><button class="tbl-act-link" onclick="toggleMoreDD('more-imp-${id}',event)">More ▾</button><div class="more-dd-menu"><button class="more-dd-item disabled">Export JSON</button><button class="more-dd-item" onclick="showConfirmPopup('Mark Ready','${d.name}')">Mark Ready</button></div></div></div></td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+  ifClose();
+  editDraft(d.name);
+  const toast = document.getElementById('update-toast');
+  if (toast) { toast.textContent = '✓ Draft funder ' + d.name + ' created from the form' + (warns ? ' — ' + warns + ' warning' + (warns > 1 ? 's' : '') + ' to complete' : ''); toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3800); }
+}
+function ifApplyPrefill(d) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== '') el.value = val; };
+  set('s1-funder-name', d.name); set('s1-funder-scheme', d.scheme); set('s1-product', d.product); set('s1-originator', d.originator); set('s1-investor', d.investor); set('s1-license', d.license);
+  document.querySelectorAll('#loanTypeDDMenu input').forEach(i => { i.checked = (d.loanTypes || []).includes(i.value); });
+  if (typeof updateMultiDD === 'function') updateMultiDD('loanTypeDD');
+  if (d.tenors && d.tenors.length) document.querySelectorAll('#tenor-chips input').forEach(i => { i.checked = d.tenors.includes(i.value); });
+  set('s1-spv', d.spv); set('s1-tranche', d.tranche);
+  const a = d.ar || {}; set('s1-ar-cutoff-id', a.cutoffId); set('s1-ar-cutoff-name', a.cutoffName); set('s1-ar-cutoff-key', a.cutoffKey); set('s1-ar-clawback-id', a.clawId); set('s1-ar-clawback-name', a.clawName); set('s1-ar-clawback-key', a.clawKey);
+  if (d.pricing) { const card = [...document.querySelectorAll('#page-s2 .radio-card')].find(c => ifNorm((c.querySelector('.radio-card-title') || {}).textContent) === ifNorm(d.pricing === 'Cashflow Based' ? 'Cash flow based' : 'Accrued interest')); if (card) selectPricing(card); }
+  if (d.pool != null) { set('is-pool-size', d.pool); if (d.currency) { const s = document.getElementById('is-pool-unit'); if (s) s.value = d.currency; } }
+  if (d.senior != null) set('is-senior', d.senior);
+  if (typeof isRecalc === 'function') isRecalc();
+  if (d.opsFlow) selectOpsFlow(d.opsFlow);
+  if (d.revolvingStart) { set('revolving-start', d.revolvingStart); if (typeof recomputeSchedule === 'function') recomputeSchedule(); }
+}
 </script>
+
+<!-- ── Import funder onboarding form (.xlsx) ── -->
+<div class="modal-overlay" id="import-form-modal">
+  <div class="modal" style="width:920px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Import funder onboarding form</div>
+        <div class="modal-sub">Upload the filled ABS Funder Onboarding Form (.xlsx). It is checked first, and a Draft funder is created only when there are no errors.</div>
+      </div>
+      <button class="modal-close" onclick="ifClose()">✕</button>
+    </div>
+    <div class="modal-body" id="if-body" style="padding:20px 24px;"></div>
+    <div class="modal-footer" id="if-footer" style="align-items:center;"></div>
+  </div>
+</div>
 
 <!-- ── Traffic Control: Add Rule Modal ── -->
 <div class="modal-overlay" id="tc-add-modal">
