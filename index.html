@@ -1287,10 +1287,10 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- EC / PC Rules: two sections. Each opens its own library to add rules, then the value is set per funder -->
+    <!-- EC / PC Rules: two sections. Each opens its own library to add rules; the value comes from the library and is display only -->
     <div class="section-card" id="ecpc-card">
       <div class="section-header">
-        <div class="section-title">EC / PC Rules <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">EC = Eligibility Criteria, PC = Portfolio Criteria. The value is set per funder.</span></span></div>
+        <div class="section-title">EC / PC Rules <span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box">EC = Eligibility Criteria, PC = Portfolio Criteria. Rules and their values come from the library.</span></span></div>
       </div>
       <div class="section-body">
         <div class="ec-sub"><div class="ec-sub-title">Eligibility Criteria (EC) <span id="ec-count-EC" style="margin-left:8px;color:#2563EB;text-transform:none;letter-spacing:0;"></span></div><button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ecLibOpen('EC')">+ Add EC</button></div>
@@ -5567,24 +5567,25 @@ lcTipsInit();
    live = on BD's list of fields that stay changeable after go-live. */
 const ECPC_CATALOG = [
   { code: 'ec_01',  name: 'User Identity',                type: 'EC', level: 'User',      live: false, op: '=',  hint: 'e.g. Individual',     def: { op: '=',  v1: 'Individual' } },
-  { code: 'ec_02',  name: 'User Default History',         type: 'EC', level: 'User',      live: true,  op: '<',  hint: 'e.g. 30 days',        def: null },
-  { code: 'ec_03',  name: 'User Activation Time',         type: 'EC', level: 'User',      live: false, op: '<=', hint: 'e.g. 2023-09-30',     def: null },
+  { code: 'ec_02',  name: 'User Default History',         type: 'EC', level: 'User',      live: true,  op: '<',  hint: 'e.g. 30 days',        def: null, val: { op: '<', v1: '30 days' } },
+  { code: 'ec_03',  name: 'User Activation Time',         type: 'EC', level: 'User',      live: false, op: '<=', hint: 'e.g. 2023-09-30',     def: null, val: { op: '<=', v1: '2023-09-30' } },
   { code: 'ec_04',  name: 'User Age at Origination',      type: 'EC', level: 'User',      live: true,  op: 'between', hint: 'e.g. 20',        def: { op: 'between', v1: '20', v2: '60' } },
   { code: 'ec_05',  name: 'User Max Limit',               type: 'EC', level: 'User',      live: true,  op: '<=', hint: 'e.g. 200000 THB',     def: { op: '<=', v1: '200000 THB' } },
   { code: 'ec_07',  name: 'Loan Arrears',                 type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 7 days',         def: { op: '<=', v1: '7 days' } },
   { code: 'ec_08a', name: 'Loan Tenure',                  type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 12 months',     def: { op: '<=', v1: '12 months' } },
   { code: 'ec_09',  name: 'Loan Effective Interest Rate', type: 'EC', level: 'Loan',      live: true,  op: '<=', hint: 'e.g. 33% p.a.',       def: { op: '<=', v1: '33% p.a.' } },
   { code: 'ec_11',  name: 'User Bankruptcy Status',       type: 'EC', level: 'User',      live: false, op: '=',  hint: 'e.g. Not bankrupt',   def: { op: '=',  v1: 'Not bankrupt' } },
-  { code: 'ec_12',  name: 'User Loan Addendum Consent',   type: 'EC', level: 'User',      live: false, op: '>=', hint: 'e.g. version 4',      def: null },
+  { code: 'ec_12',  name: 'User Loan Addendum Consent',   type: 'EC', level: 'User',      live: false, op: '>=', hint: 'e.g. version 4',      def: null, val: { op: '>=', v1: 'version 4' } },
   { code: 'hr_01',  name: 'Loan External Pleging',        type: 'EC', level: 'Loan',      live: false, op: '=',  hint: 'e.g. Not pledged',    def: { op: '=',  v1: 'Not pledged' } },
   { code: 'hr_02',  name: 'Loan Self-funded',             type: 'EC', level: 'Loan',      live: false, op: '=',  hint: 'e.g. False',          def: { op: '=',  v1: 'False' } },
   { code: 'int_01a',name: 'Eligible License Type',        type: 'EC', level: 'Loan',      live: false, op: 'in', hint: 'e.g. Type A, Type B', def: { op: 'in', v1: 'Type A, Type B' } },
-  { code: 'pc_01',  name: 'Top 10 Obligor Concentration', type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 15% of pool',    def: null },
-  { code: 'pc_02',  name: 'Max Single Obligor Exposure',  type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 1% of pool',     def: null },
-  { code: 'pc_03',  name: 'Weighted Avg Interest Rate',   type: 'PC', level: 'Portfolio', live: true,  op: '>=', hint: 'e.g. 20% p.a.',       def: null }
+  { code: 'pc_01',  name: 'Top 10 Obligor Concentration', type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 15% of pool',    def: null, val: { op: '<=', v1: '15% of pool' } },
+  { code: 'pc_02',  name: 'Max Single Obligor Exposure',  type: 'PC', level: 'Portfolio', live: true,  op: '<=', hint: 'e.g. 1% of pool',     def: null, val: { op: '<=', v1: '1% of pool' } },
+  { code: 'pc_03',  name: 'Weighted Avg Interest Rate',   type: 'PC', level: 'Portfolio', live: true,  op: '>=', hint: 'e.g. 20% p.a.',       def: null, val: { op: '>=', v1: '20% p.a.' } }
 ];
 /* A value is { op, v1, v2 }: an operator and one value, or two values for "between". Present only for the selected rules. */
-const EC_OPS = ['<=', '>=', '<', '>', '=', '≠', 'in', 'between'];
+/* The value a rule has in the library (def = rules that start selected, val = the rest). The value is fixed by the library, BD does not enter it. */
+function ecLibVal(c) { return Object.assign({ v2: '' }, c.def || c.val); }
 let ECPC_VAL = {};
 ECPC_CATALOG.forEach(c => { if (c.def) ECPC_VAL[c.code] = Object.assign({ v2: '' }, c.def); });
 let ecLibType = 'EC', ecLibPick = new Set();   // Rule library modal state
@@ -7012,17 +7013,7 @@ function ddUpdate() {
 function ecEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function ecClone(map) { const o = {}; Object.keys(map).forEach(k => { o[k] = Object.assign({}, map[k]); }); return o; }
 function ecSelected(type) { return ECPC_CATALOG.filter(c => c.code in ECPC_VAL && (!type || c.type === type)); }
-function ecMissing(v) { return !String(v.v1).trim() || (v.op === 'between' && !String(v.v2).trim()); }
 function ecFmt(v) { return v.op === 'between' ? 'between ' + v.v1 + ' and ' + v.v2 : v.op + ' ' + v.v1; }
-/* Operator dropdown + value box(es). handler(code, part, value) is called with part = 'op' | 'v1' | 'v2'. pfx keeps element ids apart. */
-function ecValueHtml(c, v, handler, pfx) {
-  const ops = EC_OPS.map(o => `<option value="${o}"${o === v.op ? ' selected' : ''}>${o}</option>`).join('');
-  const box = (part, id) => `<input type="text" class="form-input ec-val" id="${id}" value="${ecEsc(v[part])}" placeholder="${ecEsc(c.hint)}" style="flex:1;min-width:0;" oninput="${handler}('${c.code}','${part}',this.value)" />`;
-  return `<div style="display:flex;gap:6px;align-items:center;">
-    <select class="form-select" style="width:92px;flex-shrink:0;" onchange="${handler}('${c.code}','op',this.value)">${ops}</select>
-    ${box('v1', pfx + '-val-' + c.code)}${v.op === 'between' ? '<span style="font-size:12px;color:#6B7280;">and</span>' + box('v2', pfx + '-val2-' + c.code) : ''}
-  </div>`;
-}
 function ecRender() {
   ['EC', 'PC'].forEach(t => {
     const body = document.getElementById('ec-body-' + t);
@@ -7030,12 +7021,12 @@ function ecRender() {
     const rows = ecSelected(t);
     body.innerHTML = rows.length
       ? `<table style="width:100%;border-collapse:collapse;"><thead><tr>
-          <th class="ec-th" style="width:90px;">Code</th><th class="ec-th">Name</th><th class="ec-th" style="width:80px;">Level</th><th class="ec-th" style="width:420px;">Value</th><th class="ec-th" style="width:80px;"></th></tr></thead>
+          <th class="ec-th" style="width:90px;">Code</th><th class="ec-th">Name</th><th class="ec-th" style="width:80px;">Level</th><th class="ec-th" style="width:300px;">Value</th><th class="ec-th" style="width:80px;"></th></tr></thead>
           <tbody>${rows.map(c => `<tr style="border-bottom:1px solid #F3F4F6;">
             <td class="ec-td"><span class="ec-code">${c.code}</span></td>
             <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
             <td class="ec-td" style="font-size:12px;color:#6B7280;">${c.level}</td>
-            <td class="ec-td">${ecValueHtml(c, ECPC_VAL[c.code], 'ecSetPart', 'ec')}</td>
+            <td class="ec-td"><span class="ec-code">${ecEsc(ecFmt(ECPC_VAL[c.code]))}</span></td>
             <td class="ec-td"><button class="tbl-act-link" style="color:#DC2626;" onclick="ecRemove('${c.code}')">Remove</button></td>
           </tr>`).join('')}</tbody></table>`
       : `<div class="ec-empty">No ${t} added yet. Click + Add ${t} to pick from the ${t} library.</div>`;
@@ -7045,25 +7036,13 @@ function ecRender() {
   ecUpdate();
 }
 function ecRemove(code) { delete ECPC_VAL[code]; ecRender(); }
-function ecSetPart(code, part, val) {
-  ECPC_VAL[code][part] = val;
-  if (part === 'op') ecRender(); else ecUpdate();   // "between" adds a second box
-}
 function ecUpdate() {
   const sel = ecSelected();
-  const missing = sel.filter(c => ecMissing(ECPC_VAL[c.code]));
-  sel.forEach(c => {
-    const v = ECPC_VAL[c.code];
-    const a = document.getElementById('ec-val-' + c.code), b = document.getElementById('ec-val2-' + c.code);
-    if (a) a.classList.toggle('missing', !String(v.v1).trim());
-    if (b) b.classList.toggle('missing', !String(v.v2).trim());
-  });
   const nEc = sel.filter(c => c.type === 'EC').length, nPc = sel.length - nEc;
   const st = document.getElementById('ec-status');
   if (st) {
     if (!sel.length) { st.style.color = '#D97706'; st.textContent = '⚠ No EC or PC added yet'; }
-    else if (missing.length) { st.style.color = '#DC2626'; st.textContent = '✗ ' + missing.length + ' rule' + (missing.length > 1 ? 's have' : ' has') + ' no value: ' + missing.map(c => c.code).join(', '); }
-    else { st.style.color = '#16A34A'; st.textContent = '✓ ' + nEc + ' EC and ' + nPc + ' PC added, each with a value'; }
+    else { st.style.color = '#16A34A'; st.textContent = '✓ ' + nEc + ' EC and ' + nPc + ' PC added'; }
   }
   ecRenderReview();
 }
@@ -7078,7 +7057,7 @@ function ecGroupHtml(type, rows, valueCell, opts) {
 function ecRenderReview() {
   const el = document.getElementById('rv-ecpc-body');
   if (!el) return;
-  const cell = c => ecMissing(ECPC_VAL[c.code]) ? '<span style="color:#DC2626;">— missing</span>' : `<span class="ec-code">${ecEsc(ecFmt(ECPC_VAL[c.code]))}</span>`;
+  const cell = c => `<span class="ec-code">${ecEsc(ecFmt(ECPC_VAL[c.code]))}</span>`;
   el.innerHTML = ecGroupHtml('EC', ecSelected('EC'), cell) + ecGroupHtml('PC', ecSelected('PC'), cell);
 }
 
@@ -7101,11 +7080,12 @@ function ecLibRender() {
       <td class="ec-td" style="padding-left:28px;"><span class="ec-code">${c.code}</span></td>
       <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
       <td class="ec-td" style="font-size:12px;color:#6B7280;">${c.level}</td>
+      <td class="ec-td"><span class="ec-code">${ecEsc(ecFmt(ecLibVal(c)))}</span></td>
       <td class="ec-td" style="text-align:right;padding-right:28px;">${added
         ? '<button class="ec-pick" disabled>Added</button>'
         : `<button class="ec-pick${picked ? ' on' : ''}" onclick="ecLibToggle('${c.code}')">${picked ? '✓ Selected' : 'Select'}</button>`}</td>
     </tr>`;
-  }).join('') : '<tr><td class="ec-td" colspan="4" style="text-align:center;color:#9CA3AF;padding:28px;">No rule matches</td></tr>';
+  }).join('') : '<tr><td class="ec-td" colspan="5" style="text-align:center;color:#9CA3AF;padding:28px;">No rule matches</td></tr>';
   document.getElementById('ec-lib-count').textContent = ecLibPick.size ? ecLibPick.size + ' selected' : '';
 }
 function ecLibToggle(code) { if (ecLibPick.has(code)) ecLibPick.delete(code); else ecLibPick.add(code); ecLibRender(); }
@@ -7113,20 +7093,18 @@ function ecLibSave() {
   const added = ECPC_CATALOG.filter(c => ecLibPick.has(c.code));
   ecLibClose();
   if (ecLibMode === 'live') {
-    // adding to a live funder opens the edit state, so the new rules get a value before the ticket is submitted
+    // adding to a live funder opens the edit state; the new rules come with their library value and are submitted as a ticket
     if (!ecLiveEdit) { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; }
-    added.forEach(c => { ecLiveDraft[c.code] = { op: c.op, v1: '', v2: '' }; ecLiveNew.add(c.code); });
+    added.forEach(c => { ecLiveDraft[c.code] = ecLibVal(c); ecLiveNew.add(c.code); });
     ecLiveRender();
-    if (added.length) { const el = document.getElementById('ecl-val-' + added[0].code); if (el) el.focus(); }
     return;
   }
-  added.forEach(c => { ECPC_VAL[c.code] = { op: c.op, v1: '', v2: '' }; });   // starts with the rule's usual operator
+  added.forEach(c => { ECPC_VAL[c.code] = ecLibVal(c); });   // the value comes with the rule from the library
   ecRender();
-  if (added.length) { const el = document.getElementById('ec-val-' + added[0].code); if (el) el.focus(); }
 }
 
 /* ── EC / PC Rules (Lender Detail, live funder) ──
-   After go-live rules can be added and removed, and values on BD's changeable list can be edited. A new rule needs a value.
+   After go-live rules can be added and removed. Values are display only: a new rule comes with its library value.
    A removed rule stays struck through (with Undo) until the change is submitted. Submitting goes to the Ticket Center. */
 function ecLiveRender() {
   const actions = document.getElementById('ecpc-live-actions');
@@ -7137,15 +7115,12 @@ function ecLiveRender() {
     : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ecLiveStart()">Edit</button>';
   const src = ecLiveEdit ? ecLiveDraft : ECPC_LIVE;
   const rows = ECPC_CATALOG.filter(c => c.code in src);
-  const hint = ecLiveEdit
-    ? '🔒 marks a rule whose value is not on the changeable list, so it cannot be edited after go-live (it can still be removed). New rules need a value. Changes need maker/checker approval.'
-    : 'You can add or remove EC and PC rules after go-live. Existing values can be edited if they are on the changeable list. Changes need maker/checker approval.';
+  const hint = 'You can add or remove EC and PC rules after go-live. Values come from the library and cannot be edited. Changes need maker/checker approval.';
   const cell = c => {
-    const isNew = ecLiveNew.has(c.code), gone = ecLiveRemoved.has(c.code);
-    let inner;
-    if (gone) inner = `<span class="ec-code" style="text-decoration:line-through;color:#9CA3AF;">${ecEsc(ecFmt(src[c.code]))}</span>`;
-    else if (ecLiveEdit && (c.live || isNew)) inner = ecValueHtml(c, src[c.code], 'ecLiveSetPart', 'ecl');
-    else inner = `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>${ecLiveEdit ? ' <span title="Not on the changeable list" style="margin-left:6px;">🔒</span>' : ''}`;
+    const gone = ecLiveRemoved.has(c.code);
+    const inner = gone
+      ? `<span class="ec-code" style="text-decoration:line-through;color:#9CA3AF;">${ecEsc(ecFmt(src[c.code]))}</span>`
+      : `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>`;
     if (!ecLiveEdit) return inner;
     const act = gone
       ? `<button class="tbl-act-link" onclick="ecLiveUndo('${c.code}')">Undo</button>`
@@ -7158,7 +7133,6 @@ function ecLiveRender() {
   body.innerHTML = `<div class="form-hint" style="margin-bottom:0;">${hint}</div>`
     + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell, opts) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell, opts);
 }
-function ecLiveSetPart(code, part, val) { ecLiveDraft[code][part] = val; if (part === 'op') ecLiveRender(); }
 function ecLiveDiscard(code) { delete ecLiveDraft[code]; ecLiveNew.delete(code); ecLiveRender(); }
 function ecLiveRemove(code) { if (ecLiveNew.has(code)) ecLiveDiscard(code); else { ecLiveRemoved.add(code); ecLiveRender(); } }
 function ecLiveUndo(code) { ecLiveRemoved.delete(code); ecLiveRender(); }
@@ -7166,12 +7140,11 @@ function ecLiveStart() { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; ec
 function ecLiveCancel() { ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set(); ecLiveRender(); }
 function ecLiveSave() {
   const keep = Object.keys(ecLiveDraft).filter(k => !ecLiveRemoved.has(k));
-  const changed = keep.filter(k => !(k in ECPC_LIVE) || ecFmt(ecLiveDraft[k]) !== ecFmt(ECPC_LIVE[k]));
+  const changed = keep.filter(k => !(k in ECPC_LIVE));   // values are display only, so a change is a new rule
   const nNew = changed.filter(k => !(k in ECPC_LIVE)).length, nGone = ecLiveRemoved.size;
   const total = changed.length + nGone;
   const toast = document.getElementById('update-toast');
   const say = t => { if (toast) { toast.textContent = t; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); } };
-  if (keep.some(k => ecMissing(ecLiveDraft[k]))) { say('✗ Every rule needs a value'); return; }
   const next = {}; keep.forEach(k => { next[k] = ecLiveDraft[k]; });
   ECPC_LIVE = next; ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set();
   ecLiveRender();
@@ -7918,7 +7891,7 @@ function spSubmit() {
     <div style="padding:14px 28px;border-bottom:1px solid #F3F4F6;"><input type="text" class="form-input" id="ec-lib-search" placeholder="Search rules..." oninput="ecLibRender()" style="padding:10px 14px;" /></div>
     <div class="modal-body" style="min-height:260px;">
       <table style="width:100%;border-collapse:collapse;">
-        <thead><tr><th class="ec-th" style="padding-left:28px;width:110px;">Code</th><th class="ec-th">Rules</th><th class="ec-th" style="width:90px;">Level</th><th class="ec-th" style="text-align:right;padding-right:28px;width:150px;">Operation</th></tr></thead>
+        <thead><tr><th class="ec-th" style="padding-left:28px;width:110px;">Code</th><th class="ec-th">Rules</th><th class="ec-th" style="width:90px;">Level</th><th class="ec-th" style="width:200px;">Value</th><th class="ec-th" style="text-align:right;padding-right:28px;width:150px;">Operation</th></tr></thead>
         <tbody id="ec-lib-tbody"></tbody>
       </table>
     </div>
