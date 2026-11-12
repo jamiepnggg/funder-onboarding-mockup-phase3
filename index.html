@@ -9016,6 +9016,45 @@ function ifCheck(tabs) {
     draft.pool = pn; draft.senior = sn; draft.currency = cu || '';
   }
 
+  // ── Life cycle (tab 1) and Drawdown Schedule (tab 2). Both are optional: an older form without these rows is read as before. ──
+  {
+    const lcDefs = [['last', 'Last Cutoff Date'], ['rev', 'Revolving End Date'], ['end', 'Amortisation End Date'], ['sstart', 'Senior Amortisation Start Date'], ['send', 'Senior Amortisation End Date'], ['buy', 'Final Buyback Date']];
+    const isDate = x => /^\d{4}-\d{2}-\d{2}$/.test(x) && !isNaN(Date.parse(x));
+    const lc = {}, lref = {}, lbad = {}; let anyLc = false;
+    if (tabs.basic) lcDefs.forEach(([k, label]) => {
+      const kv = ifKV(tabs.basic, label); if (!kv.found) return;
+      anyLc = true; lref[k] = kv.ref; lc[k] = kv.v;
+      if (kv.v && !isDate(kv.v)) { add(T1, kv.ref, 'error', label + ' "' + kv.v + '" must be a date like 2028-11-01.'); lbad[k] = 1; lc[k] = ''; }
+    });
+    const tbl = tabs.port ? ifTable(tabs.port, '#', 'Initial Cutoff Date', /^Total$|^[G-Z]\.\s|^Legend/) : null;
+    const dd = []; let prevD = '', tot = 0, nAmt = 0;
+    (tbl || []).forEach(({ r, n }) => {
+      const d1 = col(r, 1), d2 = col(r, 2), am = col(r, 3);
+      if (!d1 && !d2 && !am) return;
+      const row = { date: '', closing: '', amt: null };
+      if (d1) { if (isDate(d1)) row.date = d1; else add(T2, 'B' + n, 'error', 'Initial Cutoff Date "' + d1 + '" must be a date like 2026-11-01.'); }
+      if (d2) { if (isDate(d2)) row.closing = d2; else add(T2, 'C' + n, 'error', 'Closing Date "' + d2 + '" must be a date like 2026-10-15.'); }
+      if (am) { if (isNaN(+am) || +am < 0) add(T2, 'D' + n, 'error', 'Amount "' + am + '" must be a number of 0 or more (USD m).'); else { row.amt = +am; tot += +am; nAmt++; } }
+      if (row.date) {
+        if (prevD && row.date <= prevD) add(T2, 'B' + n, 'warn', 'Initial Cutoff Date is not after the previous drawdown (' + prevD + ').');
+        if (!prevD || row.date > prevD) prevD = row.date;
+        if (lc.rev && row.date > lc.rev) add(T2, 'B' + n, 'warn', 'Initial Cutoff Date is after the Revolving End Date (' + lc.rev + ').');
+      }
+      dd.push(row);
+    });
+    if (tbl) {
+      draft.drawdowns = dd; counts.drawdowns = dd.length; tot = Math.round(tot * 100) / 100; draft.ddTotal = nAmt ? tot : null;
+      if (nAmt && draft.pool != null && tot > draft.pool) add(T2, '', 'warn', 'The drawdown amounts add up to ' + tot + ', which is above the Issued Pool Size (' + draft.pool + ').');
+      else if (nAmt && draft.pool != null && tot < draft.pool) add(T2, '', 'warn', 'The drawdown amounts add up to ' + tot + ', which is below the Issued Pool Size (' + draft.pool + ').');
+    }
+    if (anyLc) {
+      const first = dd.map(x => x.date).filter(Boolean).sort()[0] || '';
+      const m = lcCheck(first, lc.last, lc.rev, lc.end, 'first Initial Cutoff Date', { sStart: lc.sstart, sEnd: lc.send, buy: lc.buy });
+      lcDefs.forEach(([k, label]) => { if (m[k] && !lbad[k]) add(T1, lref[k], 'error', label + ': ' + m[k] + '.'); });
+      draft.lifecycle = lc;
+    }
+  }
+
   // ── 3. Management Plan ──
   const T3 = '3. Management Plan', pl = tabs.plan;
   if (!pl) add(T3, '', 'error', 'Tab not found');
@@ -9078,7 +9117,9 @@ function ifSampleTabs(kind) {
     A9: 'Loan Type (MY only)', B9: '', A10: 'Originator', B10: 'Seamoney', A11: 'Investor', B11: bad ? '' : 'JPM', A12: 'License (TH only)', B12: 'CCC',
     A13: 'Supported Tenors', B13: bad ? '1M, 3M, 7M, 60M' : '1M, 2M, 3M, 6M, 12M', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
     A20: 'Cutoff AR Task ID', B20: 'AR-2026-00123', A21: 'Cutoff AR Task Name', B21: 'Cutoff AR Task', A22: 'Cutoff AR Transify Key', B22: 'cutoff_ar_send',
-    A23: 'Clawback AR Task ID', B23: 'AR-2026-00456', A24: 'Clawback AR Task Name', B24: 'Clawback AR Task', A25: 'Clawback AR Transify Key', B25: 'clawback_ar_send' };
+    A23: 'Clawback AR Task ID', B23: 'AR-2026-00456', A24: 'Clawback AR Task Name', B24: 'Clawback AR Task', A25: 'Clawback AR Transify Key', B25: 'clawback_ar_send',
+    A29: 'Last Cutoff Date', B29: bad ? '2028-09-30' : '2028-09-29', A30: 'Revolving End Date', B30: '2028-11-01', A31: 'Amortisation End Date', B31: '2030-11-01',
+    A32: 'Senior Amortisation Start Date', B32: '2028-12-01', A33: 'Senior Amortisation End Date', B33: bad ? '2028-11-15' : '2030-10-01', A34: 'Final Buyback Date', B34: bad ? '2030-12-02' : '2030-10-31' };
   const t2 = { A5: 'Pricing Mode', B5: 'Accrued Interest', A6: 'Manual Clawback Mode', B6: 'Mode A: Standard osp + accrued i', A7: 'Auto Clawback Enabled', B7: 'Yes', A8: 'Auto Clawback Mode', B8: 'Mode 1 (Accrued to Restructure Date)', A9: 'N Input (Mode 2 only)', B9: '',
     A11: 'B. Funder Fee Config', A12: '#', B12: 'Fee Type', C12: 'Tenor', D12: 'Target Group', E12: 'Value', F12: 'Effective Date & Time', G12: 'Updated By',
     A13: 1, B13: 'Monthly Interest Discounted Rate', C13: '12M', D13: 'Normal User', E13: '1.5', F13: '2026-11-01 00:00',
@@ -9090,7 +9131,9 @@ function ifSampleTabs(kind) {
     A31: 'D. Traffic Control', A32: 'Rule ID', B32: 'Traffic Description', C32: 'Dimension', D32: 'Tenor', E32: 'Status',
     A33: 1, B33: 'Target OS traffic control', C33: 'Target OS', D33: 'Default', E33: 'Enable',
     A34: 2, B34: 'Target OS traffic control', C34: 'Target OS', D34: bad ? '2M' : '3M', E34: 'Enable',
-    A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 'Mil USD', A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107 };
+    A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 'Mil USD', A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107,
+    A55: 'F. Drawdown Schedule', A57: '#', B57: 'Initial Cutoff Date', C57: 'Closing Date', D57: 'Amount (USD m)',
+    A58: 1, B58: '2026-11-01', C58: '2026-10-15', D58: 70, A59: 2, B59: bad ? '2026-10-01' : '2027-01-01', C59: '2026-12-15', D59: bad ? 'abc' : 75 };
   if (bad) { t2.A15 = 3; t2.B15 = 'Monthly Interest Discounted Rate'; t2.C15 = '12M'; t2.D15 = 'Normal User'; t2.E15 = '1.5'; t2.F15 = '2026-11-01 00:00'; }
   const t3 = { A6: 'Template Name', B6: '', A7: 'Ops Flow', B7: bad ? 'TH ABS Net' : 'TH ABS Non Net', A9: 'Region', B9: bad ? 'Thailand (TH)' : 'Thailand (TH)',
     A14: 'B. Cycle Segments', A15: 'Cycle #', B15: 'Start Day', C15: 'End Day',
@@ -9140,7 +9183,7 @@ function ifRender() {
       <div style="font-size:12px;color:#6B7280;margin-top:16px;">No file to hand? Try a sample:
         <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('clean')">Clean form</button> ·
         <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('errors')">Form with errors</button></div>
-      <div style="font-size:12px;color:#9CA3AF;margin-top:14px;line-height:1.6;">What is checked: the file structure and labels, every dropdown value, numbers and dates, conditional fields (Region, Auto Clawback), tenors against Supported Tenors, rules against the Rule Library, cycle segments, and the funder name against every existing funder.</div>`;
+      <div style="font-size:12px;color:#9CA3AF;margin-top:14px;line-height:1.6;">What is checked: the file structure and labels, every dropdown value, numbers and dates, conditional fields (Region, Auto Clawback), tenors against Supported Tenors, rules against the Rule Library, the Life cycle dates and Drawdown Schedule, cycle segments, and the funder name against every existing funder.</div>`;
     foot.innerHTML = `<button class="btn-outline-sm" style="margin-left:auto;padding:8px 22px;font-size:13px;" onclick="ifClose()">Cancel</button>`;
     return;
   }
@@ -9151,8 +9194,10 @@ function ifRender() {
   const prev = [['Funder name', d.name ? ecEsc(d.name) + (d.nameDerived ? ' <span class="if-chip" style="background:#EFF6FF;color:#1D4ED8;font-size:10px;">built</span>' : '') : v('')], ['Region', v(d.region)], ['Scheme', v(d.scheme)], ['Product', v(d.product)],
     ['Originator', v(d.originator)], ['Investor', v(d.investor)], [d.region === 'MY' ? 'Loan type' : 'License', v(d.region === 'MY' ? d.loanTypes : d.license)], ['Supported tenors', v(d.tenors)],
     ['SPV · Tranche', v([d.spv, d.tranche].filter(Boolean).join(' · '))], ['Pricing mode', v(d.pricing)], ['Issued pool', d.pool != null ? ecEsc(d.pool + ' ' + (d.currency || '')) : v('')], ['Senior tranche', v(d.senior)],
-    ['Ops flow', v(flowName[d.opsFlow])], ['Revolving start', v(d.revolvingStart)], ['Rules from library', v(d.ruleIds && d.ruleIds.length ? d.ruleIds.join(', ') : '')],
-    ['Rows read', ecEsc((r.counts.fees || 0) + ' fee · ' + (r.counts.rules || 0) + ' rule · ' + (r.counts.traffic || 0) + ' traffic')]];
+    ['Ops flow', v(flowName[d.opsFlow])], ['Revolving start', v(d.revolvingStart)],
+    ['Life cycle', d.lifecycle ? v(Object.keys(d.lifecycle).filter(k => d.lifecycle[k]).length + ' of 6 dates') : v('')],
+    ['Drawdowns', d.drawdowns ? v(d.drawdowns.length + (d.ddTotal != null ? ' · total ' + d.ddTotal : '')) : v('')], ['Rules from library', v(d.ruleIds && d.ruleIds.length ? d.ruleIds.join(', ') : '')],
+    ['Rows read', ecEsc((r.counts.fees || 0) + ' fee · ' + (r.counts.rules || 0) + ' rule · ' + (r.counts.traffic || 0) + ' traffic' + (r.counts.drawdowns != null ? ' · ' + r.counts.drawdowns + ' drawdown' : ''))]];
   const groups = tabs.map(t => {
     const list = r.issues.filter(i => i.tab === t).sort((a, b) => ({ error: 0, warn: 1, info: 2 }[a.sev] - { error: 0, warn: 1, info: 2 }[b.sev]));
     const e = list.filter(i => i.sev === 'error').length, w = list.filter(i => i.sev === 'warn').length;
@@ -9210,6 +9255,16 @@ function ifApplyPrefill(d) {
   if (typeof isRecalc === 'function') isRecalc();
   if (d.opsFlow) selectOpsFlow(d.opsFlow);
   if (d.revolvingStart) { set('revolving-start', d.revolvingStart); if (typeof recomputeSchedule === 'function') recomputeSchedule(); }
+  // Life cycle and Drawdown Schedule: the form is the source, so a blank cell clears the field
+  if (d.lifecycle) {
+    const ids = { 'lc-last-cutoff': 'last', 'lc-rev-end': 'rev', 'lc-amort-end': 'end', 'lc-sen-start': 'sstart', 'lc-sen-end': 'send', 'lc-buyback': 'buy' };
+    Object.keys(ids).forEach(id => { const el = document.getElementById(id); if (el) el.value = d.lifecycle[ids[id]] || ''; });
+  }
+  if (d.drawdowns) {
+    DRAWDOWNS = d.drawdowns.map(x => ({ date: x.date, closing: x.closing, amt: x.amt == null ? 0 : x.amt }));
+    if (!DRAWDOWNS.length) DRAWDOWNS = [{ date: '', closing: '', amt: 0 }];
+  }
+  if (typeof ddRender === 'function') ddRender();   // also runs lcRecalc and the checks
 }
 </script>
 
