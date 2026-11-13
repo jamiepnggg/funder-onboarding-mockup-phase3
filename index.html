@@ -5736,10 +5736,14 @@ function renderMonthlyMilestones(type) {
     // Same columns as the revolving table: Rule | Offset from | Offset (days)
     const ruleCell = `<select class="ms-rule-sel" onchange="onMonthlyRuleChange(${i},this)">
         <option value="day"${m.rule === 'day' ? ' selected' : ''}>Day of month</option>
+        <option value="eom"${m.rule === 'eom' ? ' selected' : ''}>End of month</option>
         <option value="rel"${m.rule === 'rel' ? ' selected' : ''}>Relative</option>
       </select>`;
     let offsetFromCell, offsetCell;
-    if (m.rule === 'day') {
+    if (m.rule === 'eom') {
+      offsetFromCell = `<span style="font-size:12px;color:#9CA3AF;">Calendar month</span>`;
+      offsetCell = `<span style="font-size:12px;color:#374151;">Last day of the month (EOM)</span>`;
+    } else if (m.rule === 'day') {
       offsetFromCell = `<span style="font-size:12px;color:#9CA3AF;">Calendar month</span>`;
       offsetCell = `<div style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:12px;color:#9CA3AF;">Day</span>
@@ -5809,6 +5813,7 @@ function monthlyMilestonesForMonth(y, mth) {
   list.forEach(m => {
     const d = parseInt(m.day, 10);
     if (m.rule === 'day' && d >= 1 && d <= 31) resolved[m.key] = new Date(y, mth, Math.min(d, dim));
+    else if (m.rule === 'eom') resolved[m.key] = new Date(y, mth, dim);   // last calendar day of the month
   });
   // Relative milestones can chain (A from B, B from a Day-of-month one), so resolve in passes
   for (let pass = 0; pass < list.length; pass++) {
