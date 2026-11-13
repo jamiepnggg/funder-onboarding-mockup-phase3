@@ -5704,10 +5704,9 @@ function selectOpsFlow(type) {
    Only Ops Flows listed here show the card. X values are filled in by BD per funder. */
 const MONTHLY_MILESTONES = {
   'abs-net': [
-    { key:'pay',    label:'Monthly Payment Date',      short:'Monthly Payment', rule:'rel', day:'', n:'', ref:'report', bg:'#FFF7ED', color:'#9A3412' },
     { key:'report', label:'Monthly Report Date',       short:'Monthly Report',  rule:'day', day:'', n:'', ref:'pay',    bg:'#EFF6FF', color:'#1E40AF' },
+    { key:'pay',    label:'Monthly Payment Date',      short:'Monthly Payment', rule:'rel', day:'', n:'', ref:'report', bg:'#FFF7ED', color:'#9A3412' },
     { key:'cutoff', label:'Monthly Cutoff Date',       short:'Monthly Cutoff',  rule:'day', day:'', n:'', ref:'pay',    bg:'#F5F3FF', color:'#5B21B6' },
-    { key:'note',   label:'Monthly Note Payment Date', short:'Monthly Note Pmt',rule:'day', day:'', n:'', ref:'pay',    bg:'#ECFDF5', color:'#065F46' },
   ],
 };
 
@@ -8946,7 +8945,7 @@ function ifCheck(tabs) {
       else if (derived && derived !== name.v) add(T1, name.ref, 'warn', 'Funder Name differs from the naming rule (' + derived + ').');
       if (!/^[A-Za-z0-9_.\-]+$/.test(draft.name)) add(T1, name.ref, 'error', 'Funder Name may only contain letters, digits, _ - and .');
       const dup = ifExistingFunders().find(f => ifNorm(f.name) === ifNorm(draft.name));
-      if (dup) add(T1, name.ref, 'error', 'A funder named "' + dup.name + '" already exists (' + dup.status + '). Funder names must be unique.');
+      if (dup) { draft.dup = dup.name; add(T1, name.ref, 'warn', 'A funder named "' + dup.name + '" already exists (' + dup.status + '). Creating it asks whether to copy it, with a new SPV Name and Tranche#.'); }
     }
   }
 
@@ -9112,8 +9111,8 @@ function ifCheck(tabs) {
 
 /* sample forms: the same cell positions as the real template, so they go through the same reader */
 function ifSampleTabs(kind) {
-  const bad = kind === 'errors';
-  const t1 = { A5: 'Region', B5: bad ? 'MY' : 'TH', A6: 'Funder Name', B6: bad ? 'TH_SPL_Allstar_ABS_01' : '', A7: 'Funder Scheme', B7: 'ABS', A8: 'Product', B8: bad ? 'Personal Loan' : 'BCL',
+  const bad = kind === 'errors', dupe = kind === 'dup';
+  const t1 = { A5: 'Region', B5: bad ? 'MY' : 'TH', A6: 'Funder Name', B6: bad ? 'TH_SPL_Allstar_ABS_01' : dupe ? 'TH_SPL_Pioneer_01' : '', A7: 'Funder Scheme', B7: 'ABS', A8: 'Product', B8: bad ? 'Personal Loan' : 'BCL',
     A9: 'Loan Type (MY only)', B9: '', A10: 'Originator', B10: 'Seamoney', A11: 'Investor', B11: bad ? '' : 'JPM', A12: 'License (TH only)', B12: 'CCC',
     A13: 'Supported Tenors', B13: bad ? '1M, 3M, 7M, 60M' : '1M, 2M, 3M, 6M, 12M', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
     A20: 'Cutoff AR Task ID', B20: 'AR-2026-00123', A21: 'Cutoff AR Task Name', B21: 'Cutoff AR Task', A22: 'Cutoff AR Transify Key', B22: 'cutoff_ar_send',
@@ -9150,7 +9149,7 @@ function ifOpen() { ifState = { step: 'upload', file: '', result: null, msg: '' 
 function ifClose() { document.getElementById('import-form-modal').classList.remove('open'); }
 function ifBack() { ifState = { step: 'upload', file: '', result: null, msg: '' }; ifRender(); }
 function ifRun(tabs, fileName) { ifState = { step: 'report', file: fileName, result: ifCheck(tabs), msg: '' }; ifRender(); }
-function ifSample(kind) { ifRun(ifSampleTabs(kind), kind === 'errors' ? 'sample-form-with-errors.xlsx' : 'sample-form-clean.xlsx'); }
+function ifSample(kind) { ifRun(ifSampleTabs(kind), kind === 'errors' ? 'sample-form-with-errors.xlsx' : kind === 'dup' ? 'sample-form-duplicate-funder.xlsx' : 'sample-form-clean.xlsx'); }
 function ifLoadXlsx() {
   return new Promise((res, rej) => {
     if (window.XLSX) return res();
@@ -9182,8 +9181,9 @@ function ifRender() {
       ${ifState.msg ? `<div style="font-size:12px;color:${/^Reading/.test(ifState.msg) ? '#6B7280' : '#DC2626'};margin-top:10px;">${ecEsc(ifState.msg)}</div>` : ''}
       <div style="font-size:12px;color:#6B7280;margin-top:16px;">No file to hand? Try a sample:
         <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('clean')">Clean form</button> ·
-        <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('errors')">Form with errors</button></div>
-      <div style="font-size:12px;color:#9CA3AF;margin-top:14px;line-height:1.6;">What is checked: the file structure and labels, every dropdown value, numbers and dates, conditional fields (Region, Auto Clawback), tenors against Supported Tenors, rules against the Rule Library, the Life cycle dates and Drawdown Schedule, cycle segments, and the funder name against every existing funder.</div>`;
+        <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('errors')">Form with errors</button> ·
+        <button class="tbl-act-link" style="padding:0 6px;" onclick="ifSample('dup')">Duplicate funder</button></div>
+      <div style="font-size:12px;color:#9CA3AF;margin-top:14px;line-height:1.6;">What is checked: the file structure and labels, every dropdown value, numbers and dates, conditional fields (Region, Auto Clawback), tenors against Supported Tenors, rules against the Rule Library, the Life cycle dates and Drawdown Schedule, cycle segments, and the funder name against every existing funder (a duplicate asks to copy it with a new SPV Name and Tranche#).</div>`;
     foot.innerHTML = `<button class="btn-outline-sm" style="margin-left:auto;padding:8px 22px;font-size:13px;" onclick="ifClose()">Cancel</button>`;
     return;
   }
@@ -9221,7 +9221,48 @@ function ifRender() {
 /* create the draft: add it to the Lender List and open it in the create flow, filled in */
 function ifCreateDraft() {
   const r = ifState.result; if (!r || r.issues.some(i => i.sev === 'error')) return;
-  const d = r.draft, warns = r.issues.filter(i => i.sev === 'warn').length;
+  const d = r.draft;
+  // same handling as Import JSON: a funder with this name already exists -> ask, then copy with a new SPV Name and Tranche#
+  const dup = ifExistingFunders().find(f => ifNorm(f.name) === ifNorm(d.name));
+  if (dup) { document.getElementById('if-dup-modal').classList.add('open'); return; }
+  ifDoCreate(d);
+}
+function ifDupNo() { document.getElementById('if-dup-modal').classList.remove('open'); }
+function ifDupYes() {
+  document.getElementById('if-dup-modal').classList.remove('open');
+  const d = ifState.result.draft, L = ifLists();
+  const fill = (id, list, val) => { const el = document.getElementById(id); el.innerHTML = list.map(x => `<option${ifNorm(x) === ifNorm(val) ? ' selected' : ''}>${ecEsc(x)}</option>`).join(''); };
+  document.getElementById('if-copy-country').value = d.region || 'TH';
+  fill('if-copy-product', L.product, d.product); fill('if-copy-scheme', L.scheme, d.scheme);
+  document.getElementById('if-copy-investor').value = d.investor || '';
+  document.getElementById('if-copy-spv').value = ''; document.getElementById('if-copy-tranche').value = '';
+  ifCopyPreview();
+  document.getElementById('if-copy-modal').classList.add('open');
+}
+function ifCopyName() {
+  const g = id => document.getElementById(id).value.trim();
+  return [g('if-copy-country'), g('if-copy-product'), g('if-copy-spv'), g('if-copy-scheme'), g('if-copy-tranche')];
+}
+function ifCopyPreview() {
+  const parts = ifCopyName();
+  document.getElementById('if-copy-name').textContent = parts.map(x => x || '…').join('_');
+  document.getElementById('if-copy-err').style.display = 'none';
+}
+function ifCopyBack() { document.getElementById('if-copy-modal').classList.remove('open'); }
+function ifCopyConfirm() {
+  const parts = ifCopyName(), investor = document.getElementById('if-copy-investor').value.trim(), err = document.getElementById('if-copy-err');
+  const fail = m => { err.textContent = m; err.style.display = 'block'; };
+  if (parts.some(x => !x) || !investor) return fail('Product, Funding Scheme, Investor, SPV Name and Tranche# are required.');
+  const name = parts.join('_');
+  if (!/^[A-Za-z0-9_.\-]+$/.test(name)) return fail('Funder Name may only contain letters, digits, _ - and .');
+  const dup = ifExistingFunders().find(f => ifNorm(f.name) === ifNorm(name));
+  if (dup) return fail('A funder named "' + dup.name + '" already exists (' + dup.status + '). Enter a different SPV Name or Tranche#.');
+  const d = Object.assign({}, ifState.result.draft, { region: parts[0], product: parts[1], spv: parts[2], scheme: parts[3], tranche: parts[4], investor, name, nameDerived: false });
+  document.getElementById('if-copy-modal').classList.remove('open');
+  ifDoCreate(d);
+}
+function ifDoCreate(d) {
+  const warns = ifState.result.issues.filter(i => i.sev === 'warn' && !/already exists/.test(i.msg)).length;
   IF_IMPORTED[d.name] = d;
   DRAFT_SAVED[d.name] = { scheme: d.scheme, product: d.product, originator: d.originator, investor: d.investor };
   const tbody = document.querySelector('#flow-list .lender-table tbody');
@@ -9280,6 +9321,39 @@ function ifApplyPrefill(d) {
     </div>
     <div class="modal-body" id="if-body" style="padding:20px 24px;"></div>
     <div class="modal-footer" id="if-footer" style="align-items:center;"></div>
+  </div>
+</div>
+
+
+<!-- ── Import form: duplicate funder (same handling as Import JSON) ── -->
+<div class="modal-overlay" id="if-dup-modal" style="z-index:1100;">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header" style="padding-bottom:6px;">
+      <span class="modal-title">Funder already exists</span>
+      <button class="modal-close" onclick="ifDupNo()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:6px 24px 18px;font-size:13px;color:#374151;line-height:1.6;">A funder with the same Funder Name already exists. Do you want to create a new funder based on this configuration?</div>
+    <div class="modal-footer"><button class="btn-outline-sm" style="padding:8px 20px;font-size:13px;" onclick="ifDupNo()">No, go back</button><button class="btn-primary-lg" style="font-size:13px;padding:8px 20px;" onclick="ifDupYes()">Yes, copy &amp; create</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="if-copy-modal" style="z-index:1100;">
+  <div class="modal" style="width:720px;">
+    <div class="modal-header"><span class="modal-title">Import funder onboarding form</span><button class="modal-close" onclick="ifCopyBack()">✕</button></div>
+    <div class="modal-body" style="padding:6px 28px 20px;">
+      <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:6px;">Create a copy of this funder</div>
+      <div style="font-size:13px;color:#6B7280;line-height:1.5;margin-bottom:18px;">Product, Funding Scheme and Investor are pre-filled from the form and can be adjusted. Country follows the current environment. Enter a new <b>SPV Name</b> and <b>Tranche#</b> to finish.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;">
+        <div><label class="form-label">Country</label><input id="if-copy-country" class="form-input" disabled style="background:#F3F4F6;color:#9CA3AF;" /></div>
+        <div><label class="form-label">Product <span class="req">*</span></label><select id="if-copy-product" class="form-select" style="width:100%;" onchange="ifCopyPreview()"></select></div>
+        <div><label class="form-label">Funding Scheme <span class="req">*</span></label><select id="if-copy-scheme" class="form-select" style="width:100%;" onchange="ifCopyPreview()"></select></div>
+        <div><label class="form-label">Investor <span class="req">*</span></label><input id="if-copy-investor" class="form-input" /></div>
+        <div><label class="form-label">SPV Name <span class="req">*</span></label><input id="if-copy-spv" class="form-input" placeholder="e.g. Northstar" oninput="ifCopyPreview()" /><div style="font-size:12px;color:#6B7280;margin-top:4px;">Enter a new SPV Name for the copied funder.</div></div>
+        <div><label class="form-label">Tranche# <span class="req">*</span></label><input id="if-copy-tranche" class="form-input" placeholder="e.g. 02" oninput="ifCopyPreview()" /></div>
+      </div>
+      <div style="margin-top:16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px 16px;"><div style="font-size:11px;font-weight:600;color:#6B7280;letter-spacing:.04em;">FUNDER NAME PREVIEW</div><div id="if-copy-name" style="font-family:ui-monospace,Menlo,monospace;font-size:16px;font-weight:700;color:#1D4ED8;margin-top:6px;"></div></div>
+      <div id="if-copy-err" style="display:none;font-size:12px;color:#DC2626;margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-outline-sm" style="padding:8px 20px;font-size:13px;" onclick="ifCopyBack()">Back</button><button class="btn-primary-lg" style="font-size:13px;padding:8px 20px;" onclick="ifCopyConfirm()">Confirm &amp; create new funder</button></div>
   </div>
 </div>
 
