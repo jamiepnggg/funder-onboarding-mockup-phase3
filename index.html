@@ -912,49 +912,6 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       </div>
     </div>
 
-    <!-- Life cycle: key dates. BD picks every date. Initial Cutoff Date and Closing Date are set per drawdown (Module 2). -->
-    <div class="section-card" id="lifecycle-card">
-      <div class="section-header">
-        <div class="section-title">Life cycle</div>
-      </div>
-      <div class="section-body">
-        <div class="form-hint" style="margin-bottom:14px;">Initial Cutoff Date and Closing Date are set for each drawdown in Module 2 → Issue size → Drawdown Schedule.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
-          <div>
-            <label class="form-label">Last Cutoff Date <span data-lctip="last"></span></label>
-            <input type="date" class="form-input" id="lc-last-cutoff" value="2028-09-29" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-last" style="margin-top:4px;">The last cutoff of the revolving period.</div>
-          </div>
-          <div>
-            <label class="form-label">Revolving End Date <span data-lctip="rev"></span></label>
-            <input type="date" class="form-input" id="lc-rev-end" value="2028-11-01" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-rev" style="margin-top:4px;">End of the revolving period.</div>
-          </div>
-          <div>
-            <label class="form-label">Amortisation End Date <span data-lctip="end"></span></label>
-            <input type="date" class="form-input" id="lc-amort-end" value="2030-11-01" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-end" style="margin-top:4px;">End of the amortisation period.</div>
-          </div>
-          <div>
-            <label class="form-label">Senior Amortisation Start Date <span data-lctip="sstart"></span></label>
-            <input type="date" class="form-input" id="lc-sen-start" value="2028-12-01" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-sstart" style="margin-top:4px;">First senior payment date.</div>
-          </div>
-          <div>
-            <label class="form-label">Senior Amortisation End Date <span data-lctip="send"></span></label>
-            <input type="date" class="form-input" id="lc-sen-end" value="2030-10-01" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-send" style="margin-top:4px;">End of the senior amortisation.</div>
-          </div>
-          <div>
-            <label class="form-label">Final Buyback Date <span data-lctip="buy"></span></label>
-            <input type="date" class="form-input" id="lc-buyback" value="2030-10-31" oninput="lcRecalc()" />
-            <div class="form-hint" id="lc-h-buy" style="margin-top:4px;">Before the legal maturity date.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
     <div class="footer-nav">
       <span style="font-size:13px;color:#374151;cursor:pointer;" onclick="switchFlow('list')">Back</span>
       <div style="display:flex;gap:10px;">
@@ -1269,13 +1226,14 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;">Drawdown Schedule</div>
           <button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ddAdd()">+ Add drawdown</button>
         </div>
-        <div class="form-hint" style="margin-bottom:12px;">Each drawdown has an Initial Cutoff Date and a Closing Date (the sold date of its initial batch). Closing Date is optional at onboarding and often changes. Initial Cutoff Dates must be in ascending order and on or before the Revolving End Date (Basic Info → Life cycle). Amounts must add up to the issued pool size.</div>
+        <div class="form-hint" style="margin-bottom:12px;">Each drawdown has an Initial Cutoff Date, a Closing Date (the sold date of its initial batch) and an Initial Reporting Date. Closing Date and Initial Reporting Date are optional at onboarding and often change. Initial Cutoff Dates must be in ascending order and on or before the Revolving End Date (Life cycle below). Amounts must add up to the issued pool size.</div>
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:#F9FAFB;">
               <th style="width:44px;padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">#</th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Cutoff Date <span data-lctip="cutoff"></span></th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Closing Date <span data-lctip="closing"></span></th>
+              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Reporting Date <span data-lctip="report"></span></th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Amount (USD'm)</th>
               <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">% of Pool</th>
               <th style="width:60px;border-bottom:1px solid #E5E7EB;"></th>
@@ -1287,6 +1245,7 @@ tr.drag-over { border-top: 2px solid #2563EB; }
               <td></td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total drawn</td>
               <td></td>
+              <td></td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-val">0 USD'm</td>
               <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-pct">0%</td>
               <td></td>
@@ -1294,6 +1253,43 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           </tfoot>
         </table>
         <div id="dd-status" style="font-size:12px;font-weight:500;margin-top:6px;padding-left:14px;"></div>
+      </div>
+    </div>
+
+    <!-- Life cycle: key dates. BD picks every date. Initial Cutoff Date, Closing Date and Initial Reporting Date are set per drawdown (Drawdown Schedule above). -->
+    <div class="section-card" id="lifecycle-card">
+      <div class="section-header">
+        <div class="section-title">Life cycle</div>
+      </div>
+      <div class="section-body">
+        <div class="form-hint" style="margin-bottom:14px;">Initial Cutoff Date, Closing Date and Initial Reporting Date are set for each drawdown in the Drawdown Schedule above.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
+          <div>
+            <label class="form-label">Last Cutoff Date <span data-lctip="last"></span></label>
+            <input type="date" class="form-input" id="lc-last-cutoff" value="2028-09-29" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-last" style="margin-top:4px;">The last cutoff of the revolving period.</div>
+          </div>
+          <div>
+            <label class="form-label">Revolving End Date <span data-lctip="rev"></span></label>
+            <input type="date" class="form-input" id="lc-rev-end" value="2028-11-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-rev" style="margin-top:4px;">End of the revolving period.</div>
+          </div>
+          <div>
+            <label class="form-label">Senior Amortisation Start Date <span data-lctip="sstart"></span></label>
+            <input type="date" class="form-input" id="lc-sen-start" value="2028-12-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-sstart" style="margin-top:4px;">First senior payment date.</div>
+          </div>
+          <div>
+            <label class="form-label">Senior Amortisation End Date <span data-lctip="send"></span></label>
+            <input type="date" class="form-input" id="lc-sen-end" value="2030-10-01" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-send" style="margin-top:4px;">End of the senior amortisation.</div>
+          </div>
+          <div>
+            <label class="form-label">Final Buyback Date <span data-lctip="buy"></span></label>
+            <input type="date" class="form-input" id="lc-buyback" value="2030-10-31" oninput="lcRecalc()" />
+            <div class="form-hint" id="lc-h-buy" style="margin-top:4px;">Before the legal maturity date.</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1327,7 +1323,7 @@ tr.drag-over { border-top: 2px solid #2563EB; }
       <button class="btn-outline-sm" style="padding:10px 20px;font-size:13px;" onclick="showPage('s1',document.getElementById('tab-s1'))">← Back</button>
       <div style="display:flex;gap:10px;">
         <button class="btn-outline-sm" style="padding:10px 20px;font-size:13px;">Save draft</button>
-        <button class="btn-primary-lg" onclick="showPage('s4',null)">Next: ABS Plan →</button>
+        <button class="btn-primary-lg" onclick="s2Next()">Next: ABS Plan →</button>
       </div>
     </div>
   </div>
@@ -1920,12 +1916,6 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div class="rv-row"><span class="rv-label">Clawback AR · Task ID</span><span class="rv-value">AR-2024-00456</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Task Name</span><span class="rv-value">Clawback AR Task</span></div>
           <div class="rv-row"><span class="rv-label">Clawback AR · Transify Key</span><span class="rv-value">clawback_ar_send</span></div>
-          <div class="rv-row"><span class="rv-label">Last Cutoff Date</span><span class="rv-value" id="rvl-last">29 Sep 2028</span></div>
-          <div class="rv-row"><span class="rv-label">Revolving End Date</span><span class="rv-value" id="rvl-rev-end">1 Nov 2028</span></div>
-          <div class="rv-row"><span class="rv-label">Amortisation End Date</span><span class="rv-value" id="rvl-amort-end">1 Nov 2030</span></div>
-          <div class="rv-row"><span class="rv-label">Senior Amortisation Start Date</span><span class="rv-value" id="rvl-sen-start">1 Dec 2028</span></div>
-          <div class="rv-row"><span class="rv-label">Senior Amortisation End Date</span><span class="rv-value" id="rvl-sen-end">1 Oct 2030</span></div>
-          <div class="rv-row"><span class="rv-label">Final Buyback Date</span><span class="rv-value" id="rvl-buyback">31 Oct 2030</span></div>
           <div class="rv-row" style="align-items:flex-start;">
             <span class="rv-label" style="padding-top:4px;">Supported Tenors</span>
             <div style="display:flex;flex-wrap:wrap;gap:5px;">
@@ -2026,11 +2016,16 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             <span class="rv-label" style="padding-top:2px;">Drawdown Schedule</span>
             <div style="flex:1;">
               <table class="rv-table">
-                <thead><tr><th>Drawdown</th><th style="width:150px;">Initial Cutoff Date</th><th style="width:130px;">Closing Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
+                <thead><tr><th>Drawdown</th><th style="width:150px;">Initial Cutoff Date</th><th style="width:130px;">Closing Date</th><th style="width:150px;">Initial Reporting Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
                 <tbody id="rv-dd-tbody"></tbody>
               </table>
             </div>
           </div>
+          <div class="rv-row"><span class="rv-label">Last Cutoff Date</span><span class="rv-value" id="rvl-last">29 Sep 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Revolving End Date</span><span class="rv-value" id="rvl-rev-end">1 Nov 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Senior Amortisation Start Date</span><span class="rv-value" id="rvl-sen-start">1 Dec 2028</span></div>
+          <div class="rv-row"><span class="rv-label">Senior Amortisation End Date</span><span class="rv-value" id="rvl-sen-end">1 Oct 2030</span></div>
+          <div class="rv-row"><span class="rv-label">Final Buyback Date</span><span class="rv-value" id="rvl-buyback">31 Oct 2030</span></div>
         </div>
 
         <!-- EC / PC Rules -->
@@ -2852,19 +2847,6 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           </div>
         </div>
 
-        <!-- Life cycle (live funder): view, and edit through a ticket -->
-        <div class="view-section">
-          <div class="view-section-hd" style="cursor:pointer;" onclick="toggleAccordion('vi-lifecycle-body');this.querySelector('.vi-chev').classList.toggle('collapsed')">
-            <span class="view-section-title">Life cycle</span>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span id="lc-live-actions"></span>
-              <span class="vi-chev" style="font-size:16px;color:#6B7280;transition:transform 0.2s;">▲</span>
-            </div>
-          </div>
-          <div id="vi-lifecycle-body">
-            <div class="view-section-body" id="lc-live-body"></div>
-          </div>
-        </div>
         <div class="view-footer">
           <span style="font-size:13px;color:#374151;cursor:pointer;" onclick="switchFlow('list')">Back</span>
           <div style="display:flex;gap:10px;align-items:center;">
@@ -2975,10 +2957,23 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div class="view-section-hd"><span class="view-section-title">Issue size</span><span id="issue-size-actions"></span></div>
           <div class="view-section-body" id="issue-size-body"></div>
         </div>
-        <!-- Drawdown Schedule (live funder): Initial Cutoff Date and Closing Date of each drawdown -->
+        <!-- Drawdown Schedule (live funder): Initial Cutoff Date, Closing Date and Initial Reporting Date of each drawdown -->
         <div class="view-section">
           <div class="view-section-hd"><span class="view-section-title">Drawdown Schedule</span><span id="dd-live-actions"></span></div>
           <div class="view-section-body" id="dd-live-body"></div>
+        </div>
+        <!-- Life cycle (live funder): view, and edit through a ticket -->
+        <div class="view-section">
+          <div class="view-section-hd" style="cursor:pointer;" onclick="toggleAccordion('vi-lifecycle-body');this.querySelector('.vi-chev').classList.toggle('collapsed')">
+            <span class="view-section-title">Life cycle</span>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span id="lc-live-actions"></span>
+              <span class="vi-chev" style="font-size:16px;color:#6B7280;transition:transform 0.2s;">▲</span>
+            </div>
+          </div>
+          <div id="vi-lifecycle-body">
+            <div class="view-section-body" id="lc-live-body"></div>
+          </div>
         </div>
         <!-- EC / PC Rules -->
         <div class="view-section">
@@ -5497,7 +5492,7 @@ function selectDisc(card) {
   }
 }
 
-/* ── Life cycle (Module 1): revolving + amortisation periods and derived end dates ── */
+/* ── Life cycle (Module 2 · under Issue size): revolving period, senior amortisation and final buyback dates ── */
 function lcAddMonths(iso, n) {
   const p = iso.split('-').map(Number);
   const last = new Date(p[0], p[1] - 1 + n + 1, 0).getDate();   // clamp 31st to a shorter month
@@ -5511,19 +5506,19 @@ function lcTip(key) {
   const tips = {
     last: 'Cutoff date of the last batch. It must be on or before the Revolving End Date.',
     rev: "The last date on paper that we can sell: the contract's actual end date of the revolving period. The last batch is cut off before this date. A reminder is sent about 2 weeks before it.",
-    end: 'End of the amortisation period, when the portfolio is fully wound down. The amortisation period starts after the Revolving End Date, when no new loans are added.',
     sstart: 'The first senior payment date, when the senior tranche starts to amortise.',
     send: 'End of the senior amortisation, when the senior tranche is fully paid.',
     buy: 'The date the remaining loans are bought back. It must be before the legal maturity date. After this date no more reports are needed.',
     cutoff: 'The cutoff date of this drawdown. The earliest Initial Cutoff Date is when the revolving period starts.',
-    closing: 'The sold date of the initial batch of this drawdown.'
+    closing: 'The sold date of the initial batch of this drawdown.',
+    report: 'The date the first report of this drawdown is generated. Optional at onboarding.'
   };
   return '<span class="tooltip-wrap"><span class="tooltip-icon">ⓘ</span><span class="tooltip-box wrap">' + tips[key] + '</span></span>';
 }
 function lcTipsInit() {
   document.querySelectorAll('[data-lctip]').forEach(el => { el.outerHTML = lcTip(el.getAttribute('data-lctip')); });
 }
-/* The order the dates must follow: Initial Cutoff <= Last Cutoff <= Revolving End < Amortisation End; Senior Amortisation Start < End; Final Buyback < Amortisation End (taken as the legal maturity, tbc). Returns a message per field. */
+/* The order the dates must follow: Initial Cutoff <= Last Cutoff <= Revolving End; Senior Amortisation Start < End; Final Buyback after the Revolving End Date. Returns a message per field. */
 /* Sample public holidays for the prototype. The real list comes from the holiday calendar (which region it follows is still to be confirmed). */
 function lcHolidays() {
   return { '2026-12-25': 'Christmas Day', '2027-01-01': "New Year's Day", '2027-12-25': 'Christmas Day', '2028-01-01': "New Year's Day", '2028-10-23': 'Public holiday',
@@ -5536,28 +5531,27 @@ function lcDayIssue(iso) {
   const h = lcHolidays()[iso];
   return h ? 'Falls on a public holiday (' + h + ')' : '';
 }
-function lcCheck(start, last, revEnd, end, lbl, x) {
+function lcCheck(start, last, revEnd, lbl, x) {
   lbl = lbl || 'Initial Cutoff Date';
   x = x || {};   // x: senior amortisation start (sStart), senior amortisation end (sEnd), final buyback (buy)
-  const m = { last: '', rev: '', end: '', sstart: '', send: '', buy: '' };
+  const m = { last: '', rev: '', sstart: '', send: '', buy: '' };
   if (last && start && last < start) m.last = 'Must not be before the ' + lbl;
   else if (last && revEnd && last > revEnd) m.last = 'Must not be after the Revolving End Date';
   if (revEnd && start && revEnd <= start) m.rev = 'Must be after the ' + lbl;
-  if (end && revEnd && end <= revEnd) m.end = 'Must be after the Revolving End Date';
   if (x.sEnd && x.sStart && x.sEnd <= x.sStart) m.send = 'Must be after the Senior Amortisation Start Date';
-  if (x.buy && end && x.buy >= end) m.buy = 'Must be before the Amortisation End Date (legal maturity)';
+  if (x.buy && revEnd && x.buy <= revEnd) m.buy = 'Must be after the Revolving End Date';
   // none of the dates may fall on a weekend or a public holiday
-  const day = { last: last, rev: revEnd, end: end, sstart: x.sStart, send: x.sEnd, buy: x.buy };
+  const day = { last: last, rev: revEnd, sstart: x.sStart, send: x.sEnd, buy: x.buy };
   Object.keys(day).forEach(k => { if (!m[k]) m[k] = lcDayIssue(day[k]); });
   return m;
 }
 function lcRecalc() {
   const val = id => (document.getElementById(id) || {}).value || '';
-  const start = ddFirstCutoff(), last = val('lc-last-cutoff'), revEnd = val('lc-rev-end'), end = val('lc-amort-end'), sStart = val('lc-sen-start'), sEnd = val('lc-sen-end'), buy = val('lc-buyback');   // the revolving period starts at the first drawdown's Initial Cutoff Date
+  const start = ddFirstCutoff(), last = val('lc-last-cutoff'), revEnd = val('lc-rev-end'), sStart = val('lc-sen-start'), sEnd = val('lc-sen-end'), buy = val('lc-buyback');   // the revolving period starts at the first drawdown's Initial Cutoff Date
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  const msg = lcCheck(start, last, revEnd, end, 'first Initial Cutoff Date', { sStart: sStart, sEnd: sEnd, buy: buy });
-  const base = { last: 'The last cutoff of the revolving period.', rev: 'End of the revolving period.', end: 'End of the amortisation period.', sstart: 'First senior payment date.', send: 'End of the senior amortisation.', buy: 'Before the legal maturity date.' };
-  [['last', 'lc-h-last', 'lc-last-cutoff'], ['rev', 'lc-h-rev', 'lc-rev-end'], ['end', 'lc-h-end', 'lc-amort-end'], ['sstart', 'lc-h-sstart', 'lc-sen-start'], ['send', 'lc-h-send', 'lc-sen-end'], ['buy', 'lc-h-buy', 'lc-buyback']].forEach(([k, id, inp]) => {
+  const msg = lcCheck(start, last, revEnd, 'first Initial Cutoff Date', { sStart: sStart, sEnd: sEnd, buy: buy });
+  const base = { last: 'The last cutoff of the revolving period.', rev: 'End of the revolving period.', sstart: 'First senior payment date.', send: 'End of the senior amortisation.', buy: 'Before the legal maturity date.' };
+  [['last', 'lc-h-last', 'lc-last-cutoff'], ['rev', 'lc-h-rev', 'lc-rev-end'], ['sstart', 'lc-h-sstart', 'lc-sen-start'], ['send', 'lc-h-send', 'lc-sen-end'], ['buy', 'lc-h-buy', 'lc-buyback']].forEach(([k, id, inp]) => {
     const el = document.getElementById(id);
     if (el) { el.textContent = msg[k] || base[k]; el.style.color = msg[k] ? '#DC2626' : ''; }
     const box = document.getElementById(inp);
@@ -5565,14 +5559,14 @@ function lcRecalc() {
   });
   // Review step shows the same values
   const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
-  set('rvl-last', f(last)); set('rvl-rev-end', f(revEnd)); set('rvl-amort-end', f(end)); set('rvl-sen-start', f(sStart)); set('rvl-sen-end', f(sEnd)); set('rvl-buyback', f(buy));
+  set('rvl-last', f(last)); set('rvl-rev-end', f(revEnd)); set('rvl-sen-start', f(sStart)); set('rvl-sen-end', f(sEnd)); set('rvl-buyback', f(buy));
   if (typeof ddUpdate === 'function') ddUpdate();   // drawdown dates and checks depend on these values
   return msg;
 }
 function lcParse(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function lcIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 /* Drawdown Schedule initial data and first render (functions are defined with Issue Size auto-calc below) */
-let DRAWDOWNS = [{ date: '2026-11-01', closing: '2026-10-15', amt: 70 }, { date: '2027-01-01', closing: '2026-12-15', amt: 75 }];   // date = Initial Cutoff Date
+let DRAWDOWNS = [{ date: '2026-11-01', closing: '2026-10-15', report: '2026-11-03', amt: 70 }, { date: '2027-01-01', closing: '2026-12-15', report: '2027-01-04', amt: 75 }];   // date = Initial Cutoff Date, report = Initial Reporting Date
 lcRecalc();
 ddRender();
 lcTipsInit();
@@ -5609,10 +5603,10 @@ let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live'
 let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
 let ecLiveRemoved = new Set();                   // existing rules marked for removal, not yet submitted
 /* Life cycle of the live funder (Lender Detail) */
-let LC_LIVE = { last: '2028-09-29', revEnd: '2028-11-01', amortEnd: '2030-11-01', seniorStart: '2028-12-01', seniorEnd: '2030-10-01', buyback: '2030-10-31' };
+let LC_LIVE = { last: '2028-09-29', revEnd: '2028-11-01', seniorStart: '2028-12-01', seniorEnd: '2030-10-01', buyback: '2030-10-31' };
 let lcLiveEdit = false, lcLiveDraft = null;
 /* Drawdown Schedule of the live funder (Lender Detail). */
-let DD_LIVE = DRAWDOWNS.map(d => ({ date: d.date, closing: d.closing, amt: d.amt }));
+let DD_LIVE = DRAWDOWNS.map(d => ({ date: d.date, closing: d.closing, report: d.report, amt: d.amt }));
 let ddLiveEdit = false, ddLiveDraft = null;
 let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
 let ecLiveEdit = false, ecLiveDraft = null;
@@ -6937,8 +6931,8 @@ function isRecalc() {
 }
 
 /* ── Drawdown Schedule (Module 2 · Issue size) ──
-   Each drawdown has an Initial Cutoff Date and an optional Closing Date. The first Initial Cutoff Date starts the revolving period
-   (Basic Info → Life cycle); every Initial Cutoff Date must be on or before the Revolving End Date. */
+   Each drawdown has an Initial Cutoff Date, an optional Closing Date and an optional Initial Reporting Date. The first Initial Cutoff Date starts the revolving period
+   (Life cycle, under Issue size); every Initial Cutoff Date must be on or before the Revolving End Date. */
 /* DRAWDOWNS is declared and first rendered earlier in this script (next to the Discounting Setting code),
    because the legacy milestone drag-and-drop block further down throws at load and stops anything after it. */
 function ddFirstCutoff() {
@@ -6951,8 +6945,9 @@ function ddRender() {
   tbody.innerHTML = DRAWDOWNS.map((d, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
       <td style="padding:12px 14px;font-size:12px;color:#9CA3AF;">${i + 1}</td>
       <td style="padding:12px 14px;"><div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;flex-wrap:wrap;">
-        <input type="date" class="form-input" value="${d.date}" style="width:160px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
-      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.closing || ''}" style="width:160px;" oninput="ddSet(${i},'closing',this)" /></td>
+        <input type="date" class="form-input" value="${d.date}" style="width:140px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
+      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.closing || ''}" style="width:140px;" oninput="ddSet(${i},'closing',this)" /></td>
+      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.report || ''}" style="width:140px;" oninput="ddSet(${i},'report',this)" /></td>
       <td style="padding:12px 14px;"><div style="display:flex;gap:0;align-items:center;">
         <input type="number" min="0" value="${d.amt}" class="form-input" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddSet(${i},'amt',this)" />
         <span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div></td>
@@ -6967,10 +6962,10 @@ function ddSet(i, field, el) {
   if (field === 'date') lcRecalc(); else ddUpdate();
 }
 function ddAdd() {
-  // the next drawdown starts one month after the last one; its Closing Date is filled in later
+  // the next drawdown starts one month after the last one; its Closing Date and Initial Reporting Date are filled in later
   const last = DRAWDOWNS[DRAWDOWNS.length - 1];
   const next = last && last.date ? lcIso(lcAddMonths(last.date, 1)) : '';
-  DRAWDOWNS.push({ date: next, closing: '', amt: 0 });
+  DRAWDOWNS.push({ date: next, closing: '', report: '', amt: 0 });
   ddRender();
 }
 function ddRemove(i) {
@@ -6995,7 +6990,7 @@ function ddUpdate() {
   if (diff === 0) { msg = '✓ Drawdowns add up to the issued pool size'; color = '#16A34A'; }
   else if (diff > 0) { msg = '⚠ ' + diff + " USD'm of the issued pool is not scheduled yet"; color = '#D97706'; }
   else { msg = '✗ Drawdowns exceed the issued pool size by ' + Math.abs(diff) + " USD'm"; color = '#DC2626'; }
-  // Every Initial Cutoff Date must be on or before the Revolving End Date (Basic Info → Life cycle)
+  // Every Initial Cutoff Date must be on or before the Revolving End Date (Life cycle)
   const revEnd = (document.getElementById('lc-rev-end') || {}).value || '';
   const outside = [];
   DRAWDOWNS.forEach((d, i) => {
@@ -7016,8 +7011,8 @@ function ddUpdate() {
   const rv = document.getElementById('rv-dd-tbody');
   if (rv) {
     const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
-    rv.innerHTML = DRAWDOWNS.map((d, i) => `<tr><td>${i + 1}</td><td>${f(d.date)}</td><td>${f(d.closing)}</td><td>${d.amt}</td><td>${pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00'}%</td></tr>`).join('')
-      + `<tr style="font-weight:700;"><td>Total</td><td></td><td></td><td style="color:#2563EB;">${Math.round(sum * 100) / 100}</td><td style="color:#2563EB;">${pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00'}%</td></tr>`;
+    rv.innerHTML = DRAWDOWNS.map((d, i) => `<tr><td>${i + 1}</td><td>${f(d.date)}</td><td>${f(d.closing)}</td><td>${f(d.report)}</td><td>${d.amt}</td><td>${pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00'}%</td></tr>`).join('')
+      + `<tr style="font-weight:700;"><td>Total</td><td></td><td></td><td></td><td style="color:#2563EB;">${Math.round(sum * 100) / 100}</td><td style="color:#2563EB;">${pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00'}%</td></tr>`;
   }
 }
 
@@ -7168,8 +7163,8 @@ function ecLiveSave() {
 }
 
 /* ── Life cycle (Lender Detail, live funder) ──
-   BD can edit Last Cutoff, Revolving End, Amortisation End, Senior Amortisation Start, Senior Amortisation End and Final Buyback Date. Changes go through a ticket.
-   Initial Cutoff Date and Closing Date belong to each drawdown (Drawdown Schedule, Portfolio Setting). */
+   BD can edit Last Cutoff, Revolving End, Senior Amortisation Start, Senior Amortisation End and Final Buyback Date. Changes go through a ticket.
+   Initial Cutoff Date, Closing Date and Initial Reporting Date belong to each drawdown (Drawdown Schedule, Portfolio Setting). */
 function lcLiveRender() {
   const actions = document.getElementById('lc-live-actions');
   const body = document.getElementById('lc-live-body');
@@ -7184,24 +7179,23 @@ function lcLiveRender() {
   body.innerHTML = `<div class="view-grid">
       ${field('Last Cutoff Date', 'last', d('last'), 'lcl-h-last')}
       ${field('Revolving End Date', 'rev', d('revEnd'), 'lcl-h-rev')}
-      ${field('Amortisation End Date', 'end', d('amortEnd'), 'lcl-h-end')}
       ${field('Senior Amortisation Start Date', 'sstart', d('seniorStart'), 'lcl-h-sstart')}
       ${field('Senior Amortisation End Date', 'send', d('seniorEnd'), 'lcl-h-send')}
       ${field('Final Buyback Date', 'buy', d('buyback'), 'lcl-h-buy')}
     </div>
     <div id="lcl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
-    <div class="form-hint" style="margin-top:12px;">Initial Cutoff Date and Closing Date are set for each drawdown in Portfolio Setting → Drawdown Schedule. Changes go through a ticket.</div>`;
+    <div class="form-hint" style="margin-top:12px;">Initial Cutoff Date, Closing Date and Initial Reporting Date are set for each drawdown in the Drawdown Schedule above. Changes go through a ticket.</div>`;
   lcLiveUpdate();
 }
 /* Updates the field checks, the "moves" note and the Save button without rebuilding the inputs (keeps focus) */
 function lcLiveUpdate() {
   const v = lcLiveEdit ? lcLiveDraft : LC_LIVE;
   const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
-  const msg = lcCheck(ddLiveFirst(), v.last, v.revEnd, v.amortEnd, 'first Initial Cutoff Date', { sStart: v.seniorStart, sEnd: v.seniorEnd, buy: v.buyback });
-  set('lcl-h-last', lcLiveEdit ? msg.last : ''); set('lcl-h-rev', lcLiveEdit ? msg.rev : ''); set('lcl-h-end', lcLiveEdit ? msg.end : ''); set('lcl-h-sstart', lcLiveEdit ? msg.sstart : ''); set('lcl-h-send', lcLiveEdit ? msg.send : ''); set('lcl-h-buy', lcLiveEdit ? msg.buy : '');
+  const msg = lcCheck(ddLiveFirst(), v.last, v.revEnd, 'first Initial Cutoff Date', { sStart: v.seniorStart, sEnd: v.seniorEnd, buy: v.buyback });
+  set('lcl-h-last', lcLiveEdit ? msg.last : ''); set('lcl-h-rev', lcLiveEdit ? msg.rev : ''); set('lcl-h-sstart', lcLiveEdit ? msg.sstart : ''); set('lcl-h-send', lcLiveEdit ? msg.send : ''); set('lcl-h-buy', lcLiveEdit ? msg.buy : '');
   const note = document.getElementById('lcl-shift');
   if (note) {
-    const names = { last: 'Last Cutoff Date', revEnd: 'Revolving End Date', amortEnd: 'Amortisation End Date', seniorStart: 'Senior Amortisation Start Date', seniorEnd: 'Senior Amortisation End Date', buyback: 'Final Buyback Date' };
+    const names = { last: 'Last Cutoff Date', revEnd: 'Revolving End Date', seniorStart: 'Senior Amortisation Start Date', seniorEnd: 'Senior Amortisation End Date', buyback: 'Final Buyback Date' };
     const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
     const moves = lcLiveEdit ? Object.keys(names).filter(k => v[k] !== LC_LIVE[k]).map(k => names[k] + ' ' + f(LC_LIVE[k]) + ' → ' + f(v[k])) : [];
     note.style.display = moves.length ? '' : 'none';
@@ -7209,7 +7203,7 @@ function lcLiveUpdate() {
   }
   const btn = document.getElementById('lc-live-save');
   if (btn) {
-    const bad = msg.last || msg.rev || msg.end || msg.sstart || msg.send || msg.buy;
+    const bad = msg.last || msg.rev || msg.sstart || msg.send || msg.buy;
     btn.disabled = !!bad; btn.style.opacity = bad ? '0.45' : ''; btn.style.cursor = bad ? 'not-allowed' : '';
   }
 }
@@ -7217,7 +7211,7 @@ function lcLiveSet(key, val) { lcLiveDraft[key] = val; lcLiveUpdate(); }
 function lcLiveStart() { lcLiveDraft = Object.assign({}, LC_LIVE); lcLiveEdit = true; lcLiveRender(); }
 function lcLiveCancel() { lcLiveEdit = false; lcLiveDraft = null; lcLiveRender(); }
 function lcLiveSave() {
-  const keys = ['last', 'revEnd', 'amortEnd', 'seniorStart', 'seniorEnd', 'buyback'];
+  const keys = ['last', 'revEnd', 'seniorStart', 'seniorEnd', 'buyback'];
   const changed = keys.filter(k => lcLiveDraft[k] !== LC_LIVE[k]);
   const toast = document.getElementById('update-toast');
   LC_LIVE = lcLiveDraft; lcLiveEdit = false; lcLiveDraft = null;
@@ -7230,7 +7224,7 @@ function lcLiveSave() {
 }
 
 /* ── Drawdown Schedule (Lender Detail, live funder · Portfolio Setting) ──
-   BD can edit the Initial Cutoff Date, Closing Date and Amount of each drawdown. Amounts must not exceed the issued pool size (Issue size). Changes go through a ticket. */
+   BD can edit the Initial Cutoff Date, Closing Date, Initial Reporting Date and Amount of each drawdown. Amounts must not exceed the issued pool size (Issue size). Changes go through a ticket. */
 function ddLiveFirst(rows) {
   const ds = (rows || DD_LIVE).map(r => r.date).filter(Boolean).sort();
   return ds.length ? ds[0] : '';
@@ -7247,24 +7241,26 @@ function ddLiveRender() {
   const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
   const th = (t, tip) => `<th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">${t}${tip ? ' ' + lcTip(tip) : ''}</th>`;
   const td = 'padding:12px 14px;font-size:13px;color:#374151;';
-  const input = (i, key) => `<input type="date" class="form-input" id="ddl-${key}-${i}" value="${rows[i][key] || ''}" style="width:160px;" oninput="ddLiveSet(${i},'${key}',this.value)" />`;
+  const input = (i, key) => `<input type="date" class="form-input" id="ddl-${key}-${i}" value="${rows[i][key] || ''}" style="width:140px;" oninput="ddLiveSet(${i},'${key}',this.value)" />`;
   const closing = (r, i) => ddLiveEdit ? input(i, 'closing') : f(r.closing);
+  const report = (r, i) => ddLiveEdit ? input(i, 'report') : f(r.report);
   const sum = Math.round(rows.reduce((s, r) => s + r.amt, 0) * 100) / 100;
   const pct = n => (pool > 0 ? (n / pool * 100).toFixed(2) : '0.00') + '%';
   body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>${th('#')}${th('Initial Cutoff Date', 'cutoff')}${th('Closing Date', 'closing')}${th("Amount (USD'm)")}${th('% of Pool')}</tr></thead>
+      <thead><tr>${th('#')}${th('Initial Cutoff Date', 'cutoff')}${th('Closing Date', 'closing')}${th('Initial Reporting Date', 'report')}${th("Amount (USD'm)")}${th('% of Pool')}</tr></thead>
       <tbody>${rows.map((r, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
         <td style="${td}color:#9CA3AF;font-size:12px;">${i + 1}</td>
         <td style="${td}">${ddLiveEdit ? input(i, 'date') : f(r.date)} <span id="ddl-msg-${i}" style="font-size:12px;color:#DC2626;"></span></td>
         <td style="${td}">${closing(r, i)}</td>
+        <td style="${td}">${report(r, i)}</td>
         <td style="${td}">${ddLiveEdit ? `<div style="display:flex;align-items:center;"><input type="number" min="0" class="form-input" id="ddl-amt-${i}" value="${r.amt}" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddLiveSet(${i},'amt',this.value)" /><span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div>` : r.amt}</td>
         <td style="${td}" id="ddl-pct-${i}">${pct(r.amt)}</td></tr>`).join('')}
-        <tr><td colspan="3" style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total</td>
+        <tr><td colspan="4" style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total</td>
           <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total">${sum}</td><td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total-pct">${pct(sum)}</td></tr>
       </tbody></table>
     <div id="ddl-status" style="font-size:12px;margin-top:10px;color:#DC2626;"></div>
     <div id="ddl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
-    <div class="form-hint" style="margin-top:12px;">Closing Date is the sold date of the drawdown's initial batch. Amounts together must not exceed the issued pool size. Changes go through a ticket.</div>`;
+    <div class="form-hint" style="margin-top:12px;">Closing Date is the sold date of the drawdown's initial batch. Initial Reporting Date is the date its first report is generated. Amounts together must not exceed the issued pool size. Changes go through a ticket.</div>`;
   ddLiveUpdate();
 }
 /* Checks, the "moves" note and the Save button, without rebuilding the inputs (keeps focus) */
@@ -7309,6 +7305,7 @@ function ddLiveUpdate() {
     if (ddLiveEdit) rows.forEach((r, i) => {
       if (r.date !== DD_LIVE[i].date) moves.push('Drawdown ' + (i + 1) + ' Initial Cutoff Date ' + f(DD_LIVE[i].date) + ' → ' + f(r.date));
       if (r.closing !== DD_LIVE[i].closing) moves.push('Drawdown ' + (i + 1) + ' Closing Date ' + f(DD_LIVE[i].closing) + ' → ' + f(r.closing));
+      if ((r.report || '') !== (DD_LIVE[i].report || '')) moves.push('Drawdown ' + (i + 1) + ' Initial Reporting Date ' + f(DD_LIVE[i].report) + ' → ' + f(r.report));
       if (r.amt !== DD_LIVE[i].amt) moves.push('Drawdown ' + (i + 1) + " Amount " + DD_LIVE[i].amt + ' → ' + r.amt + " USD'm");
     });
     note.style.display = moves.length ? '' : 'none';
@@ -7322,7 +7319,7 @@ function ddLiveStart() { ddLiveDraft = DD_LIVE.map(r => Object.assign({}, r)); d
 function ddLiveCancel() { ddLiveEdit = false; ddLiveDraft = null; ddLiveRender(); }
 function ddLiveSave() {
   let changed = 0;
-  ddLiveDraft.forEach((r, i) => { if (r.date !== DD_LIVE[i].date) changed++; if (r.closing !== DD_LIVE[i].closing) changed++; if (r.amt !== DD_LIVE[i].amt) changed++; });
+  ddLiveDraft.forEach((r, i) => { if (r.date !== DD_LIVE[i].date) changed++; if (r.closing !== DD_LIVE[i].closing) changed++; if ((r.report || '') !== (DD_LIVE[i].report || '')) changed++; if (r.amt !== DD_LIVE[i].amt) changed++; });
   const toast = document.getElementById('update-toast');
   DD_LIVE = ddLiveDraft; ddLiveEdit = false; ddLiveDraft = null;
   ddLiveRender();
@@ -7360,15 +7357,7 @@ function s1Next() {
     if (trigger) trigger.style.borderColor = '';
   }
 
-  // a failed Life cycle date check blocks Next
-  const lcBad = Object.values(lcRecalc()).some(Boolean);
-  if (allFilled && lcBad) {
-    const card = document.getElementById('lifecycle-card');
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const toast = document.getElementById('update-toast');
-    if (toast) { toast.textContent = '✗ Fix the Life cycle dates before continuing'; toast.classList.add('visible'); setTimeout(() => { toast.classList.remove('visible'); }, 3200); }
-  }
-  if (allFilled && !lcBad) {
+  if (allFilled) {
     // Tick step 1
     const tab = document.getElementById('tab-s1');
     tab.classList.remove('active');
@@ -7376,6 +7365,19 @@ function s1Next() {
     tab.querySelector('.step-num').textContent = '✓';
     showPage('s2', document.getElementById('tab-s2'));
   }
+}
+
+/* ── Portfolio Setting step: a failed Life cycle date check blocks Next ── */
+function s2Next() {
+  const lcBad = Object.values(lcRecalc()).some(Boolean);
+  if (lcBad) {
+    const card = document.getElementById('lifecycle-card');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const toast = document.getElementById('update-toast');
+    if (toast) { toast.textContent = '✗ Fix the Life cycle dates before continuing'; toast.classList.add('visible'); setTimeout(() => { toast.classList.remove('visible'); }, 3200); }
+    return;
+  }
+  showPage('s4', null);
 }
 
 /* ── Pricing & Terms inline edit ── */
@@ -9017,7 +9019,7 @@ function ifCheck(tabs) {
 
   // ── Life cycle (tab 1) and Drawdown Schedule (tab 2). Both are optional: an older form without these rows is read as before. ──
   {
-    const lcDefs = [['last', 'Last Cutoff Date'], ['rev', 'Revolving End Date'], ['end', 'Amortisation End Date'], ['sstart', 'Senior Amortisation Start Date'], ['send', 'Senior Amortisation End Date'], ['buy', 'Final Buyback Date']];
+    const lcDefs = [['last', 'Last Cutoff Date'], ['rev', 'Revolving End Date'], ['sstart', 'Senior Amortisation Start Date'], ['send', 'Senior Amortisation End Date'], ['buy', 'Final Buyback Date']];
     const isDate = x => /^\d{4}-\d{2}-\d{2}$/.test(x) && !isNaN(Date.parse(x));
     const lc = {}, lref = {}, lbad = {}; let anyLc = false;
     if (tabs.basic) lcDefs.forEach(([k, label]) => {
@@ -9027,13 +9029,20 @@ function ifCheck(tabs) {
     });
     const tbl = tabs.port ? ifTable(tabs.port, '#', 'Initial Cutoff Date', /^Total$|^[G-Z]\.\s|^Legend/) : null;
     const dd = []; let prevD = '', tot = 0, nAmt = 0;
+    // columns are found by header, so a form with or without the Initial Reporting Date column is read the same way
+    const hdr = tabs.port ? (tabs.port.find(r => r && ifNorm(r[0]) === ifNorm('#') && ifNorm(r[1]) === ifNorm('Initial Cutoff Date')) || []) : [];
+    const hIdx = name => hdr.findIndex(h => ifNorm(h) === ifNorm(name));
+    const cRep = hIdx('Initial Reporting Date');
+    let cAmt = hdr.findIndex(h => /^amount/i.test(String(h || '').trim())); if (cAmt < 0) cAmt = 3;
+    const L = i => String.fromCharCode(65 + i);
     (tbl || []).forEach(({ r, n }) => {
-      const d1 = col(r, 1), d2 = col(r, 2), am = col(r, 3);
-      if (!d1 && !d2 && !am) return;
-      const row = { date: '', closing: '', amt: null };
+      const d1 = col(r, 1), d2 = col(r, 2), am = col(r, cAmt), d3 = cRep >= 0 ? col(r, cRep) : '';
+      if (!d1 && !d2 && !am && !d3) return;
+      const row = { date: '', closing: '', report: '', amt: null };
       if (d1) { if (isDate(d1)) row.date = d1; else add(T2, 'B' + n, 'error', 'Initial Cutoff Date "' + d1 + '" must be a date like 2026-11-01.'); }
       if (d2) { if (isDate(d2)) row.closing = d2; else add(T2, 'C' + n, 'error', 'Closing Date "' + d2 + '" must be a date like 2026-10-15.'); }
-      if (am) { if (isNaN(+am) || +am < 0) add(T2, 'D' + n, 'error', 'Amount "' + am + '" must be a number of 0 or more (USD m).'); else { row.amt = +am; tot += +am; nAmt++; } }
+      if (d3) { if (isDate(d3)) row.report = d3; else add(T2, L(cRep) + n, 'error', 'Initial Reporting Date "' + d3 + '" must be a date like 2026-11-03.'); }
+      if (am) { if (isNaN(+am) || +am < 0) add(T2, L(cAmt) + n, 'error', 'Amount "' + am + '" must be a number of 0 or more (USD m).'); else { row.amt = +am; tot += +am; nAmt++; } }
       if (row.date) {
         if (prevD && row.date <= prevD) add(T2, 'B' + n, 'warn', 'Initial Cutoff Date is not after the previous drawdown (' + prevD + ').');
         if (!prevD || row.date > prevD) prevD = row.date;
@@ -9048,7 +9057,7 @@ function ifCheck(tabs) {
     }
     if (anyLc) {
       const first = dd.map(x => x.date).filter(Boolean).sort()[0] || '';
-      const m = lcCheck(first, lc.last, lc.rev, lc.end, 'first Initial Cutoff Date', { sStart: lc.sstart, sEnd: lc.send, buy: lc.buy });
+      const m = lcCheck(first, lc.last, lc.rev, 'first Initial Cutoff Date', { sStart: lc.sstart, sEnd: lc.send, buy: lc.buy });
       lcDefs.forEach(([k, label]) => { if (m[k] && !lbad[k]) add(T1, lref[k], 'error', label + ': ' + m[k] + '.'); });
       draft.lifecycle = lc;
     }
@@ -9117,7 +9126,7 @@ function ifSampleTabs(kind) {
     A13: 'Supported Tenors', B13: bad ? '1M, 3M, 7M, 60M' : '1M, 2M, 3M, 6M, 12M', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
     A20: 'Cutoff AR Task ID', B20: 'AR-2026-00123', A21: 'Cutoff AR Task Name', B21: 'Cutoff AR Task', A22: 'Cutoff AR Transify Key', B22: 'cutoff_ar_send',
     A23: 'Clawback AR Task ID', B23: 'AR-2026-00456', A24: 'Clawback AR Task Name', B24: 'Clawback AR Task', A25: 'Clawback AR Transify Key', B25: 'clawback_ar_send',
-    A29: 'Last Cutoff Date', B29: bad ? '2028-09-30' : '2028-09-29', A30: 'Revolving End Date', B30: '2028-11-01', A31: 'Amortisation End Date', B31: '2030-11-01',
+    A29: 'Last Cutoff Date', B29: bad ? '2028-09-30' : '2028-09-29', A30: 'Revolving End Date', B30: '2028-11-01',
     A32: 'Senior Amortisation Start Date', B32: '2028-12-01', A33: 'Senior Amortisation End Date', B33: bad ? '2028-11-15' : '2030-10-01', A34: 'Final Buyback Date', B34: bad ? '2030-12-02' : '2030-10-31' };
   const t2 = { A5: 'Pricing Mode', B5: 'Accrued Interest', A6: 'Manual Clawback Mode', B6: 'Mode A: Standard osp + accrued i', A7: 'Auto Clawback Enabled', B7: 'Yes', A8: 'Auto Clawback Mode', B8: 'Mode 1 (Accrued to Restructure Date)', A9: 'N Input (Mode 2 only)', B9: '',
     A11: 'B. Funder Fee Config', A12: '#', B12: 'Fee Type', C12: 'Tenor', D12: 'Target Group', E12: 'Value', F12: 'Effective Date & Time', G12: 'Updated By',
@@ -9131,8 +9140,8 @@ function ifSampleTabs(kind) {
     A33: 1, B33: 'Target OS traffic control', C33: 'Target OS', D33: 'Default', E33: 'Enable',
     A34: 2, B34: 'Target OS traffic control', C34: 'Target OS', D34: bad ? '2M' : '3M', E34: 'Enable',
     A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 'Mil USD', A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107,
-    A55: 'F. Drawdown Schedule', A57: '#', B57: 'Initial Cutoff Date', C57: 'Closing Date', D57: 'Amount (USD m)',
-    A58: 1, B58: '2026-11-01', C58: '2026-10-15', D58: 70, A59: 2, B59: bad ? '2026-10-01' : '2027-01-01', C59: '2026-12-15', D59: bad ? 'abc' : 75 };
+    A55: 'F. Drawdown Schedule', A57: '#', B57: 'Initial Cutoff Date', C57: 'Closing Date', D57: 'Initial Reporting Date', E57: 'Amount (USD m)',
+    A58: 1, B58: '2026-11-01', C58: '2026-10-15', D58: '2026-11-03', E58: 70, A59: 2, B59: bad ? '2026-10-01' : '2027-01-01', C59: '2026-12-15', D59: '2027-01-04', E59: bad ? 'abc' : 75 };
   if (bad) { t2.A15 = 3; t2.B15 = 'Monthly Interest Discounted Rate'; t2.C15 = '12M'; t2.D15 = 'Normal User'; t2.E15 = '1.5'; t2.F15 = '2026-11-01 00:00'; }
   const t3 = { A6: 'Template Name', B6: '', A7: 'Ops Flow', B7: bad ? 'TH ABS Net' : 'TH ABS Non Net', A9: 'Region', B9: bad ? 'Thailand (TH)' : 'Thailand (TH)',
     A14: 'B. Cycle Segments', A15: 'Cycle #', B15: 'Start Day', C15: 'End Day',
@@ -9195,7 +9204,7 @@ function ifRender() {
     ['Originator', v(d.originator)], ['Investor', v(d.investor)], [d.region === 'MY' ? 'Loan type' : 'License', v(d.region === 'MY' ? d.loanTypes : d.license)], ['Supported tenors', v(d.tenors)],
     ['SPV · Tranche', v([d.spv, d.tranche].filter(Boolean).join(' · '))], ['Pricing mode', v(d.pricing)], ['Issued pool', d.pool != null ? ecEsc(d.pool + ' ' + (d.currency || '')) : v('')], ['Senior tranche', v(d.senior)],
     ['Ops flow', v(flowName[d.opsFlow])], ['Revolving start', v(d.revolvingStart)],
-    ['Life cycle', d.lifecycle ? v(Object.keys(d.lifecycle).filter(k => d.lifecycle[k]).length + ' of 6 dates') : v('')],
+    ['Life cycle', d.lifecycle ? v(Object.keys(d.lifecycle).filter(k => d.lifecycle[k]).length + ' of 5 dates') : v('')],
     ['Drawdowns', d.drawdowns ? v(d.drawdowns.length + (d.ddTotal != null ? ' · total ' + d.ddTotal : '')) : v('')], ['Rules from library', v(d.ruleIds && d.ruleIds.length ? d.ruleIds.join(', ') : '')],
     ['Rows read', ecEsc((r.counts.fees || 0) + ' fee · ' + (r.counts.rules || 0) + ' rule · ' + (r.counts.traffic || 0) + ' traffic' + (r.counts.drawdowns != null ? ' · ' + r.counts.drawdowns + ' drawdown' : ''))]];
   const groups = tabs.map(t => {
@@ -9298,12 +9307,12 @@ function ifApplyPrefill(d) {
   if (d.revolvingStart) { set('revolving-start', d.revolvingStart); if (typeof recomputeSchedule === 'function') recomputeSchedule(); }
   // Life cycle and Drawdown Schedule: the form is the source, so a blank cell clears the field
   if (d.lifecycle) {
-    const ids = { 'lc-last-cutoff': 'last', 'lc-rev-end': 'rev', 'lc-amort-end': 'end', 'lc-sen-start': 'sstart', 'lc-sen-end': 'send', 'lc-buyback': 'buy' };
+    const ids = { 'lc-last-cutoff': 'last', 'lc-rev-end': 'rev', 'lc-sen-start': 'sstart', 'lc-sen-end': 'send', 'lc-buyback': 'buy' };
     Object.keys(ids).forEach(id => { const el = document.getElementById(id); if (el) el.value = d.lifecycle[ids[id]] || ''; });
   }
   if (d.drawdowns) {
-    DRAWDOWNS = d.drawdowns.map(x => ({ date: x.date, closing: x.closing, amt: x.amt == null ? 0 : x.amt }));
-    if (!DRAWDOWNS.length) DRAWDOWNS = [{ date: '', closing: '', amt: 0 }];
+    DRAWDOWNS = d.drawdowns.map(x => ({ date: x.date, closing: x.closing, report: x.report || '', amt: x.amt == null ? 0 : x.amt }));
+    if (!DRAWDOWNS.length) DRAWDOWNS = [{ date: '', closing: '', report: '', amt: 0 }];
   }
   if (typeof ddRender === 'function') ddRender();   // also runs lcRecalc and the checks
 }
