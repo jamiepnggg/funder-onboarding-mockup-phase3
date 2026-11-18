@@ -5616,7 +5616,7 @@ let ECPC_VAL = {};
 ECPC_CATALOG.forEach(c => { if (c.def) ECPC_VAL[c.code] = Object.assign({ v2: '' }, c.def); });
 let ecLibType = 'EC', ecLibPick = new Set();   // Rule library modal state
 let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live' = Lender Detail
-let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
+let ecLivePend = new Set();                      // rules requested in Lender Detail, waiting for maker/checker approval
 /* Life cycle of the live funder (Lender Detail) */
 let LC_LIVE = { last: '2028-09-29', revEnd: '2028-11-01', seniorStart: '2028-11-01', seniorEnd: '2030-10-01', buyback: '2030-10-31' };
 let lcLiveEdit = false, lcLiveDraft = null;
@@ -7096,6 +7096,7 @@ function ecRenderReview() {
 function ecLibOpen(t, mode) {
   ecLibType = t; ecLibPick = new Set(); ecLibMode = mode || 'onboard';
   document.getElementById('ec-lib-title').textContent = t + ' Library';
+  document.getElementById('ec-lib-save').textContent = ecLibMode === 'live' ? 'Submit for approval' : 'Save';
   document.getElementById('ec-lib-search').value = '';
   ecLibRender();
   document.getElementById('ec-lib-modal').classList.add('open');
@@ -7110,13 +7111,11 @@ function ecLibRender() {
     return `<tr style="border-bottom:1px solid #F3F4F6;">
       <td class="ec-td" style="padding-left:28px;"><span class="ec-code">${c.code}</span></td>
       <td class="ec-td" style="font-weight:500;color:#111827;">${c.name}</td>
-      <td class="ec-td" style="font-size:12px;color:#6B7280;">${c.level}</td>
-      <td class="ec-td"><span class="ec-code">${ecEsc(ecFmt(ecLibVal(c)))}</span></td>
       <td class="ec-td" style="text-align:right;padding-right:28px;">${added
-        ? '<button class="ec-pick" disabled>Added</button>'
+        ? `<button class="ec-pick" disabled>${ecLibMode === 'live' && ecLivePend.has(c.code) ? 'Pending' : 'Added'}</button>`
         : `<button class="ec-pick${picked ? ' on' : ''}" onclick="ecLibToggle('${c.code}')">${picked ? '✓ Selected' : 'Select'}</button>`}</td>
     </tr>`;
-  }).join('') : '<tr><td class="ec-td" colspan="5" style="text-align:center;color:#9CA3AF;padding:28px;">No rule matches</td></tr>';
+  }).join('') : '<tr><td class="ec-td" colspan="3" style="text-align:center;color:#9CA3AF;padding:28px;">No rule matches</td></tr>';
   document.getElementById('ec-lib-count').textContent = ecLibPick.size ? ecLibPick.size + ' selected' : '';
 }
 function ecLibToggle(code) { if (ecLibPick.has(code)) ecLibPick.delete(code); else ecLibPick.add(code); ecLibRender(); }
@@ -7124,13 +7123,13 @@ function ecLibSave() {
   const added = ECPC_CATALOG.filter(c => ecLibPick.has(c.code));
   ecLibClose();
   if (ecLibMode === 'live') {
-    // live funder: rules and values live in the DE library. BD can only attach an existing rule; its value stays pending until DE supplies it.
-    added.forEach(c => { ECPC_LIVE[c.code] = null; ecLiveNew.add(c.code); });
+    // live funder: rules and values live in the DE library. BD can only request an existing rule; it is a ticket, so the rule shows as
+    // pending until the checker approves it, and its value stays "-" until DE has set it.
+    if (!added.length) return;
+    added.forEach(c => { ECPC_LIVE[c.code] = null; ecLivePend.add(c.code); });
     ecLiveRender();
-    if (added.length) {
-      const toast = document.getElementById('update-toast');
-      if (toast) { toast.textContent = '✓ ' + added.length + ' ' + ecLibType + ' rule' + (added.length > 1 ? 's' : '') + ' added — value will show once DE sets it'; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); }
-    }
+    const toast = document.getElementById('update-toast');
+    if (toast) { toast.textContent = '✓ Ticket created to add ' + added.length + ' ' + ecLibType + ' rule' + (added.length > 1 ? 's' : '') + ' — pending maker/checker approval'; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); }
     return;
   }
   added.forEach(c => { ECPC_VAL[c.code] = ecLibVal(c); });   // the value comes with the rule from the library
@@ -7138,21 +7137,32 @@ function ecLibSave() {
 }
 
 /* ── EC / PC Rules (Lender Detail, live funder) ──
-   Read only. Rules and values are maintained by DE in the rule library, so BD cannot edit or delete them here.
-   BD can attach an existing library rule (+ Add); until DE has set its value the row shows "-". */
+   Existing rules are read only: rules and values are maintained by DE in the rule library, so they cannot be edited or removed here.
+   "+ Add" picks an existing library rule and "Submit for approval" creates a ticket. Until the checker approves it the row is tagged
+   "Pending approval" (BD can withdraw it); once approved, the value still shows "-" until DE has set it. */
 function ecLiveRender() {
   const actions = document.getElementById('ecpc-live-actions');
   const body = document.getElementById('ecpc-live-body');
   if (!actions || !body) return;
   actions.innerHTML = '';
   const rows = ECPC_CATALOG.filter(c => c.code in ECPC_LIVE);
-  const hint = 'Rules and values are maintained by DE in the rule library, so they cannot be edited or removed here. You can add an existing rule; its value shows as - until DE has set it.';
-  const cell = c => ECPC_LIVE[c.code]
-    ? `<span class="ec-code">${ecEsc(ecFmt(ECPC_LIVE[c.code]))}</span>`
-    : '<span style="color:#9CA3AF;">-</span>';
-  const opts = { addMode: 'live', tag: c => ecLiveNew.has(c.code) ? ' <span class="ec-type EC" style="margin-left:6px;background:#DCFCE7;color:#16A34A;">New</span>' : '' };
-  body.innerHTML = `<div class="form-hint" style="margin-bottom:0;">${hint}</div>`
+  const n = ecLivePend.size;
+  const hint = 'Rules and values are maintained by DE in the rule library and cannot be edited or removed here. To add a rule, pick it from the library and submit it for maker/checker approval. Its value shows "-" until DE has set it.';
+  const banner = n ? `<div style="display:flex;align-items:center;gap:10px;margin:12px 0 0;padding:10px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;font-size:13px;color:#92400E;"><span style="font-weight:600;">${n} rule${n > 1 ? 's' : ''} pending approval</span><span style="color:#B45309;">The checker reviews the request in the Ticket Center. Withdraw a rule below if it was added by mistake.</span></div>` : '';
+  const cell = c => {
+    const val = ECPC_LIVE[c.code] ? `<span class="ec-code">${ecEsc(ecFmt(ECPC_LIVE[c.code]))}</span>` : '<span style="color:#9CA3AF;">-</span>';
+    return ecLivePend.has(c.code)
+      ? `<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;">${val}</div><button class="tbl-act-link" onclick="ecLiveWithdraw('${c.code}')">Withdraw</button></div>`
+      : val;
+  };
+  const opts = { addMode: 'live', tag: c => ecLivePend.has(c.code) ? ' <span class="ec-type EC" style="margin-left:6px;background:#FEF3C7;color:#B45309;">Pending approval</span>' : '' };
+  body.innerHTML = `<div class="form-hint" style="margin-bottom:0;">${hint}</div>` + banner
     + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell, opts) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell, opts);
+}
+function ecLiveWithdraw(code) {
+  delete ECPC_LIVE[code]; ecLivePend.delete(code); ecLiveRender();
+  const toast = document.getElementById('update-toast');
+  if (toast) { toast.textContent = '✓ Request withdrawn'; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 2200); }
 }
 
 /* ── Life cycle (Lender Detail, live funder) ──
@@ -7896,7 +7906,7 @@ function spSubmit() {
 </div>
 
 <div class="modal-overlay" id="ec-lib-modal">
-  <div class="modal" style="width:720px;">
+  <div class="modal" style="width:620px;">
     <div class="modal-header">
       <div><div class="modal-title" id="ec-lib-title">EC Library</div></div>
       <button class="modal-close" onclick="ecLibClose()">✕</button>
@@ -7904,14 +7914,14 @@ function spSubmit() {
     <div style="padding:14px 28px;border-bottom:1px solid #F3F4F6;"><input type="text" class="form-input" id="ec-lib-search" placeholder="Search rules..." oninput="ecLibRender()" style="padding:10px 14px;" /></div>
     <div class="modal-body" style="min-height:260px;">
       <table style="width:100%;border-collapse:collapse;">
-        <thead><tr><th class="ec-th" style="padding-left:28px;width:110px;">Code</th><th class="ec-th">Rules</th><th class="ec-th" style="width:90px;">Level</th><th class="ec-th" style="width:200px;">Value</th><th class="ec-th" style="text-align:right;padding-right:28px;width:150px;">Operation</th></tr></thead>
+        <thead><tr><th class="ec-th" style="padding-left:28px;width:130px;">Code</th><th class="ec-th">Rules</th><th class="ec-th" style="text-align:right;padding-right:28px;width:140px;">Operation</th></tr></thead>
         <tbody id="ec-lib-tbody"></tbody>
       </table>
     </div>
     <div class="modal-footer" style="align-items:center;">
       <span id="ec-lib-count" style="margin-right:auto;font-size:12px;font-weight:600;color:#2563EB;"></span>
       <button class="btn-outline-sm" style="padding:8px 24px;font-size:13px;" onclick="ecLibClose()">Cancel</button>
-      <button class="btn-primary-lg" style="font-size:13px;padding:8px 24px;" onclick="ecLibSave()">Save</button>
+      <button class="btn-primary-lg" style="font-size:13px;padding:8px 24px;" id="ec-lib-save" onclick="ecLibSave()">Save</button>
     </div>
   </div>
 </div>
