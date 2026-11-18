@@ -1226,16 +1226,17 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;">Drawdown Schedule</div>
           <button class="btn-outline-sm" style="padding:6px 14px;font-size:12px;" onclick="ddAdd()">+ Add drawdown</button>
         </div>
-        <div class="form-hint" style="margin-bottom:12px;">Each drawdown has an Initial Cutoff Date, a Closing Date (the sold date of its initial batch) and an Initial Reporting Date. Closing Date and Initial Reporting Date are optional at onboarding and often change. Initial Cutoff Dates must be in ascending order and on or before the Revolving End Date (Life cycle below). Amounts must add up to the issued pool size.</div>
+        <div class="form-hint" style="margin-bottom:12px;">Each drawdown has an Initial Cutoff Date, an Initial Loan List Date (the same date as the cutoff), a Closing Date (the sold date of its initial batch) and an Initial Reporting Date. Closing Date and Initial Reporting Date are optional at onboarding and often change. Initial Cutoff Dates must be in ascending order and on or before the Revolving End Date (Life cycle below). Amounts must add up to the issued pool size.</div>
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:#F9FAFB;">
-              <th style="width:44px;padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">#</th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Cutoff Date <span data-lctip="cutoff"></span></th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Closing Date <span data-lctip="closing"></span></th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Reporting Date <span data-lctip="report"></span></th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Amount (USD'm)</th>
-              <th style="padding:9px 14px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">% of Pool</th>
+              <th style="width:44px;padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">#</th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Cutoff Date <span data-lctip="cutoff"></span></th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Loan List Date <span data-lctip="loanlist"></span></th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Closing Date <span data-lctip="closing"></span></th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Initial Reporting Date <span data-lctip="report"></span></th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">Amount (USD'm)</th>
+              <th style="padding:9px 8px;font-size:11px;font-weight:600;color:#6B7280;text-align:left;border-bottom:1px solid #E5E7EB;">% of Pool</th>
               <th style="width:60px;border-bottom:1px solid #E5E7EB;"></th>
             </tr>
           </thead>
@@ -1243,11 +1244,12 @@ tr.drag-over { border-top: 2px solid #2563EB; }
           <tfoot>
             <tr>
               <td></td>
-              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total drawn</td>
+              <td style="padding:10px 8px;font-size:13px;font-weight:700;color:#111827;">Total drawn</td>
               <td></td>
               <td></td>
-              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-val">0 USD'm</td>
-              <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-pct">0%</td>
+              <td></td>
+              <td style="padding:10px 8px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-val">0 USD'm</td>
+              <td style="padding:10px 8px;font-size:13px;font-weight:700;color:#2563EB;" id="dd-total-pct">0%</td>
               <td></td>
             </tr>
           </tfoot>
@@ -2016,7 +2018,7 @@ tr.drag-over { border-top: 2px solid #2563EB; }
             <span class="rv-label" style="padding-top:2px;">Drawdown Schedule</span>
             <div style="flex:1;">
               <table class="rv-table">
-                <thead><tr><th>Drawdown</th><th style="width:150px;">Initial Cutoff Date</th><th style="width:130px;">Closing Date</th><th style="width:150px;">Initial Reporting Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
+                <thead><tr><th>Drawdown</th><th style="width:150px;">Initial Cutoff Date</th><th style="width:150px;">Initial Loan List Date</th><th style="width:130px;">Closing Date</th><th style="width:150px;">Initial Reporting Date</th><th style="width:100px;">Amount (USD'm)</th><th style="width:90px;">% of Pool</th></tr></thead>
                 <tbody id="rv-dd-tbody"></tbody>
               </table>
             </div>
@@ -5521,6 +5523,7 @@ function lcTip(key) {
     send: 'End of the senior amortisation, when the senior tranche is fully paid.',
     buy: 'The date the remaining loans are bought back. It must be before the legal maturity date. After this date no more reports are needed.',
     cutoff: 'The cutoff date of this drawdown. The earliest Initial Cutoff Date is when the revolving period starts.',
+    loanlist: 'The date the initial loan list of this drawdown is prepared. It is the same date as the Initial Cutoff Date, so it follows that date and is not entered separately. It is a separate milestone so DE and BE can be reminded at different times on that day.',
     closing: 'The sold date of the initial batch of this drawdown.',
     report: 'The date the first report of this drawdown is generated. Optional at onboarding.'
   };
@@ -5614,7 +5617,6 @@ ECPC_CATALOG.forEach(c => { if (c.def) ECPC_VAL[c.code] = Object.assign({ v2: ''
 let ecLibType = 'EC', ecLibPick = new Set();   // Rule library modal state
 let ecLibMode = 'onboard';                       // 'onboard' = Module 2, 'live' = Lender Detail
 let ecLiveNew = new Set();                       // rules added in Lender Detail, not yet submitted
-let ecLiveRemoved = new Set();                   // existing rules marked for removal, not yet submitted
 /* Life cycle of the live funder (Lender Detail) */
 let LC_LIVE = { last: '2028-09-29', revEnd: '2028-11-01', seniorStart: '2028-11-01', seniorEnd: '2030-10-01', buyback: '2030-10-31' };
 let lcLiveEdit = false, lcLiveDraft = null;
@@ -5622,7 +5624,6 @@ let lcLiveEdit = false, lcLiveDraft = null;
 let DD_LIVE = DRAWDOWNS.map(d => ({ date: d.date, closing: d.closing, report: d.report, amt: d.amt }));
 let ddLiveEdit = false, ddLiveDraft = null;
 let ECPC_LIVE = ecClone(ECPC_VAL);              // Lender Detail copy of a live funder
-let ecLiveEdit = false, ecLiveDraft = null;
 ecRender();
 ecLiveRender();
 lcLiveRender();
@@ -6961,22 +6962,24 @@ function ddRender() {
   const tbody = document.getElementById('dd-tbody');
   if (!tbody) return;
   tbody.innerHTML = DRAWDOWNS.map((d, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
-      <td style="padding:12px 14px;font-size:12px;color:#9CA3AF;">${i + 1}</td>
-      <td style="padding:12px 14px;"><div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;flex-wrap:wrap;">
-        <input type="date" class="form-input" value="${d.date}" style="width:140px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
-      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.closing || ''}" style="width:140px;" oninput="ddSet(${i},'closing',this)" /></td>
-      <td style="padding:12px 14px;"><input type="date" class="form-input" value="${d.report || ''}" style="width:140px;" oninput="ddSet(${i},'report',this)" /></td>
-      <td style="padding:12px 14px;"><div style="display:flex;gap:0;align-items:center;">
+      <td style="padding:12px 8px;font-size:12px;color:#9CA3AF;">${i + 1}</td>
+      <td style="padding:12px 8px;"><div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;flex-wrap:wrap;">
+        <input type="date" class="form-input" value="${d.date}" style="width:128px;" oninput="ddSet(${i},'date',this)" /><span id="dd-date-${i}" style="font-size:12px;color:#9CA3AF;"></span></div></td>
+      <td style="padding:12px 8px;font-size:13px;color:#6B7280;white-space:nowrap;" id="dd-ll-${i}">${d.date ? lcFmt(lcParse(d.date)) : '—'}</td>
+      <td style="padding:12px 8px;"><input type="date" class="form-input" value="${d.closing || ''}" style="width:128px;" oninput="ddSet(${i},'closing',this)" /></td>
+      <td style="padding:12px 8px;"><input type="date" class="form-input" value="${d.report || ''}" style="width:128px;" oninput="ddSet(${i},'report',this)" /></td>
+      <td style="padding:12px 8px;"><div style="display:flex;gap:0;align-items:center;">
         <input type="number" min="0" value="${d.amt}" class="form-input" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddSet(${i},'amt',this)" />
         <span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div></td>
-      <td style="padding:12px 14px;font-size:13px;color:#374151;" id="dd-pct-${i}">0%</td>
-      <td style="padding:12px 14px;"><button class="tbl-act-link" style="color:${DRAWDOWNS.length > 1 ? '#DC2626' : '#D1D5DB'};" ${DRAWDOWNS.length > 1 ? '' : 'disabled'} onclick="ddRemove(${i})">Remove</button></td>
+      <td style="padding:12px 8px;font-size:13px;color:#374151;" id="dd-pct-${i}">0%</td>
+      <td style="padding:12px 8px;"><button class="tbl-act-link" style="color:${DRAWDOWNS.length > 1 ? '#DC2626' : '#D1D5DB'};" ${DRAWDOWNS.length > 1 ? '' : 'disabled'} onclick="ddRemove(${i})">Remove</button></td>
     </tr>`).join('');
   lcRecalc();   // the first Initial Cutoff Date drives the revolving period; this also runs ddUpdate
 }
 
 function ddSet(i, field, el) {
   DRAWDOWNS[i][field] = field === 'amt' ? (parseFloat(el.value) || 0) : el.value;
+  if (field === 'date') { const ll = document.getElementById('dd-ll-' + i); if (ll) ll.textContent = el.value ? lcFmt(lcParse(el.value)) : '—'; }   // Initial Loan List Date is the Initial Cutoff Date
   if (field === 'date') lcRecalc(); else ddUpdate();
 }
 function ddAdd() {
@@ -7029,8 +7032,8 @@ function ddUpdate() {
   const rv = document.getElementById('rv-dd-tbody');
   if (rv) {
     const f = iso => iso ? lcFmt(lcParse(iso)) : '—';
-    rv.innerHTML = DRAWDOWNS.map((d, i) => `<tr><td>${i + 1}</td><td>${f(d.date)}</td><td>${f(d.closing)}</td><td>${f(d.report)}</td><td>${d.amt}</td><td>${pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00'}%</td></tr>`).join('')
-      + `<tr style="font-weight:700;"><td>Total</td><td></td><td></td><td></td><td style="color:#2563EB;">${Math.round(sum * 100) / 100}</td><td style="color:#2563EB;">${pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00'}%</td></tr>`;
+    rv.innerHTML = DRAWDOWNS.map((d, i) => `<tr><td>${i + 1}</td><td>${f(d.date)}</td><td>${f(d.date)}</td><td>${f(d.closing)}</td><td>${f(d.report)}</td><td>${d.amt}</td><td>${pool > 0 ? (d.amt / pool * 100).toFixed(2) : '0.00'}%</td></tr>`).join('')
+      + `<tr style="font-weight:700;"><td>Total</td><td></td><td></td><td></td><td></td><td style="color:#2563EB;">${Math.round(sum * 100) / 100}</td><td style="color:#2563EB;">${pool > 0 ? (sum / pool * 100).toFixed(2) : '0.00'}%</td></tr>`;
   }
 }
 
@@ -7100,7 +7103,7 @@ function ecLibOpen(t, mode) {
 function ecLibClose() { document.getElementById('ec-lib-modal').classList.remove('open'); }
 function ecLibRender() {
   const q = document.getElementById('ec-lib-search').value.trim().toLowerCase();
-  const have = ecLibMode === 'live' ? (ecLiveEdit ? ecLiveDraft : ECPC_LIVE) : ECPC_VAL;
+  const have = ecLibMode === 'live' ? ECPC_LIVE : ECPC_VAL;
   const rows = ECPC_CATALOG.filter(c => c.type === ecLibType && (!q || (c.code + ' ' + c.name).toLowerCase().includes(q)));
   document.getElementById('ec-lib-tbody').innerHTML = rows.length ? rows.map(c => {
     const added = c.code in have, picked = ecLibPick.has(c.code);
@@ -7121,10 +7124,13 @@ function ecLibSave() {
   const added = ECPC_CATALOG.filter(c => ecLibPick.has(c.code));
   ecLibClose();
   if (ecLibMode === 'live') {
-    // adding to a live funder opens the edit state; the new rules come with their library value and are submitted as a ticket
-    if (!ecLiveEdit) { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; }
-    added.forEach(c => { ecLiveDraft[c.code] = ecLibVal(c); ecLiveNew.add(c.code); });
+    // live funder: rules and values live in the DE library. BD can only attach an existing rule; its value stays pending until DE supplies it.
+    added.forEach(c => { ECPC_LIVE[c.code] = null; ecLiveNew.add(c.code); });
     ecLiveRender();
+    if (added.length) {
+      const toast = document.getElementById('update-toast');
+      if (toast) { toast.textContent = '✓ ' + added.length + ' ' + ecLibType + ' rule' + (added.length > 1 ? 's' : '') + ' added — value will show once DE sets it'; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); }
+    }
     return;
   }
   added.forEach(c => { ECPC_VAL[c.code] = ecLibVal(c); });   // the value comes with the rule from the library
@@ -7132,52 +7138,21 @@ function ecLibSave() {
 }
 
 /* ── EC / PC Rules (Lender Detail, live funder) ──
-   After go-live rules can be added and removed. Values are display only: a new rule comes with its library value.
-   A removed rule stays struck through (with Undo) until the change is submitted. Submitting goes to the Ticket Center. */
+   Read only. Rules and values are maintained by DE in the rule library, so BD cannot edit or delete them here.
+   BD can attach an existing library rule (+ Add); until DE has set its value the row shows "-". */
 function ecLiveRender() {
   const actions = document.getElementById('ecpc-live-actions');
   const body = document.getElementById('ecpc-live-body');
   if (!actions || !body) return;
-  actions.innerHTML = ecLiveEdit
-    ? '<button class="btn-outline-sm" style="padding:6px 16px;font-size:13px;margin-right:8px;" onclick="ecLiveCancel()">Cancel</button><button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ecLiveSave()">Save</button>'
-    : '<button class="btn-edit" style="padding:6px 18px;font-size:13px;border-radius:6px;" onclick="ecLiveStart()">Edit</button>';
-  const src = ecLiveEdit ? ecLiveDraft : ECPC_LIVE;
-  const rows = ECPC_CATALOG.filter(c => c.code in src);
-  const hint = 'You can add or remove EC and PC rules after go-live. Values come from the library and cannot be edited. Changes need maker/checker approval.';
-  const cell = c => {
-    const gone = ecLiveRemoved.has(c.code);
-    const inner = gone
-      ? `<span class="ec-code" style="text-decoration:line-through;color:#9CA3AF;">${ecEsc(ecFmt(src[c.code]))}</span>`
-      : `<span class="ec-code">${ecEsc(ecFmt(src[c.code]))}</span>`;
-    if (!ecLiveEdit) return inner;
-    const act = gone
-      ? `<button class="tbl-act-link" onclick="ecLiveUndo('${c.code}')">Undo</button>`
-      : `<button class="tbl-act-link" style="color:#DC2626;" onclick="ecLiveRemove('${c.code}')">Remove</button>`;
-    return `<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;">${inner}</div>${act}</div>`;
-  };
-  const opts = { addMode: 'live', tag: c => ecLiveRemoved.has(c.code)
-    ? ' <span class="ec-type EC" style="margin-left:6px;background:#FEE2E2;color:#DC2626;">Removed</span>'
-    : (ecLiveNew.has(c.code) ? ' <span class="ec-type EC" style="margin-left:6px;background:#DCFCE7;color:#16A34A;">New</span>' : '') };
+  actions.innerHTML = '';
+  const rows = ECPC_CATALOG.filter(c => c.code in ECPC_LIVE);
+  const hint = 'Rules and values are maintained by DE in the rule library, so they cannot be edited or removed here. You can add an existing rule; its value shows as - until DE has set it.';
+  const cell = c => ECPC_LIVE[c.code]
+    ? `<span class="ec-code">${ecEsc(ecFmt(ECPC_LIVE[c.code]))}</span>`
+    : '<span style="color:#9CA3AF;">-</span>';
+  const opts = { addMode: 'live', tag: c => ecLiveNew.has(c.code) ? ' <span class="ec-type EC" style="margin-left:6px;background:#DCFCE7;color:#16A34A;">New</span>' : '' };
   body.innerHTML = `<div class="form-hint" style="margin-bottom:0;">${hint}</div>`
     + ecGroupHtml('EC', rows.filter(c => c.type === 'EC'), cell, opts) + ecGroupHtml('PC', rows.filter(c => c.type === 'PC'), cell, opts);
-}
-function ecLiveDiscard(code) { delete ecLiveDraft[code]; ecLiveNew.delete(code); ecLiveRender(); }
-function ecLiveRemove(code) { if (ecLiveNew.has(code)) ecLiveDiscard(code); else { ecLiveRemoved.add(code); ecLiveRender(); } }
-function ecLiveUndo(code) { ecLiveRemoved.delete(code); ecLiveRender(); }
-function ecLiveStart() { ecLiveDraft = ecClone(ECPC_LIVE); ecLiveEdit = true; ecLiveRender(); }
-function ecLiveCancel() { ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set(); ecLiveRender(); }
-function ecLiveSave() {
-  const keep = Object.keys(ecLiveDraft).filter(k => !ecLiveRemoved.has(k));
-  const changed = keep.filter(k => !(k in ECPC_LIVE));   // values are display only, so a change is a new rule
-  const nNew = changed.filter(k => !(k in ECPC_LIVE)).length, nGone = ecLiveRemoved.size;
-  const total = changed.length + nGone;
-  const toast = document.getElementById('update-toast');
-  const say = t => { if (toast) { toast.textContent = t; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 3200); } };
-  const next = {}; keep.forEach(k => { next[k] = ecLiveDraft[k]; });
-  ECPC_LIVE = next; ecLiveEdit = false; ecLiveDraft = null; ecLiveNew = new Set(); ecLiveRemoved = new Set();
-  ecLiveRender();
-  const detail = [nNew ? nNew + ' new' : '', nGone ? nGone + ' removed' : ''].filter(Boolean).join(', ');
-  say(total ? '✓ ' + total + ' EC / PC change' + (total > 1 ? 's' : '') + (detail ? ' (' + detail + ')' : '') + ' submitted to Ticket Center — pending maker/checker approval' : 'No changes to submit');
 }
 
 /* ── Life cycle (Lender Detail, live funder) ──
@@ -7265,20 +7240,21 @@ function ddLiveRender() {
   const sum = Math.round(rows.reduce((s, r) => s + r.amt, 0) * 100) / 100;
   const pct = n => (pool > 0 ? (n / pool * 100).toFixed(2) : '0.00') + '%';
   body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-      <thead><tr>${th('#')}${th('Initial Cutoff Date', 'cutoff')}${th('Closing Date', 'closing')}${th('Initial Reporting Date', 'report')}${th("Amount (USD'm)")}${th('% of Pool')}</tr></thead>
+      <thead><tr>${th('#')}${th('Initial Cutoff Date', 'cutoff')}${th('Initial Loan List Date', 'loanlist')}${th('Closing Date', 'closing')}${th('Initial Reporting Date', 'report')}${th("Amount (USD'm)")}${th('% of Pool')}</tr></thead>
       <tbody>${rows.map((r, i) => `<tr style="border-bottom:1px solid #F3F4F6;">
         <td style="${td}color:#9CA3AF;font-size:12px;">${i + 1}</td>
         <td style="${td}">${ddLiveEdit ? input(i, 'date') : f(r.date)} <span id="ddl-msg-${i}" style="font-size:12px;color:#DC2626;"></span></td>
+        <td style="${td}">${f(r.date)}</td>
         <td style="${td}">${closing(r, i)}</td>
         <td style="${td}">${report(r, i)}</td>
         <td style="${td}">${ddLiveEdit ? `<div style="display:flex;align-items:center;"><input type="number" min="0" class="form-input" id="ddl-amt-${i}" value="${r.amt}" style="width:90px;border-radius:6px 0 0 6px;border-right:none;" oninput="ddLiveSet(${i},'amt',this.value)" /><span style="background:#F9FAFB;border:1px solid #D1D5DB;border-left:none;border-radius:0 6px 6px 0;padding:0 10px;display:flex;align-items:center;font-size:12px;color:#6B7280;align-self:stretch;">USD'm</span></div>` : r.amt}</td>
         <td style="${td}" id="ddl-pct-${i}">${pct(r.amt)}</td></tr>`).join('')}
-        <tr><td colspan="4" style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total</td>
+        <tr><td colspan="5" style="padding:10px 14px;font-size:13px;font-weight:700;color:#111827;">Total</td>
           <td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total">${sum}</td><td style="padding:10px 14px;font-size:13px;font-weight:700;color:#2563EB;" id="ddl-total-pct">${pct(sum)}</td></tr>
       </tbody></table>
     <div id="ddl-status" style="font-size:12px;margin-top:10px;color:#DC2626;"></div>
     <div id="ddl-shift" style="display:none;font-size:12px;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
-    <div class="form-hint" style="margin-top:12px;">Closing Date is the sold date of the drawdown's initial batch. Initial Reporting Date is the date its first report is generated. Amounts together must not exceed the issued pool size. Changes go through a ticket.</div>`;
+    <div class="form-hint" style="margin-top:12px;">Initial Loan List Date is the same date as the Initial Cutoff Date. Closing Date is the sold date of the drawdown's initial batch. Initial Reporting Date is the date its first report is generated. Amounts together must not exceed the issued pool size. Changes go through a ticket.</div>`;
   ddLiveUpdate();
 }
 /* Checks, the "moves" note and the Save button, without rebuilding the inputs (keeps focus) */
@@ -9562,7 +9538,9 @@ let RB_LEADS = [
   { id: 2, n: 1,  time: '09:00' },
   { id: 3, n: 2,  time: '09:00' },
   { id: 4, n: 5,  time: '09:00' },
-  { id: 5, n: 10, time: '09:00' }
+  { id: 5, n: 10, time: '09:00' },
+  { id: 6, n: 0,  time: '05:00' },
+  { id: 7, n: 0,  time: '07:00' }
 ];
 const rbLeadIdFor = n => (RB_LEADS.find(l => l.n === n && l.time === '09:00') || RB_LEADS[0]).id;
 const rb = (id, flow, ms, owners, text, leads, time, ready, esc, on) => ({ id: id, flow: flow, ms: ms, funders: [], owners: owners, text: text, leads: leads.map(rbLeadIdFor), on: on });
@@ -9588,6 +9566,8 @@ let RB_RULES = [
   rb(16, 'abl', 'rev:Weekly Deposit Date', ['OPS'], '', [0], '09:00', '', false, true),
   rb(17, 'abl', 'rev:Periodic Interest Invoice Date', ['OPS'], '', [1], '09:00', '', false, true)
 ];
+/* Initial milestones: the loan list is due the same day as the cutoff, so DE is reminded early (05:00) and BE after the loan list has run (07:00) */
+RB_RULES.forEach(r => { if (r.ms === 'dd:iloan') r.leads = [6]; if (r.ms === 'dd:icut') r.leads = [7]; });
 /* The week shown in the preview (Mon 16 to Sun 22 Nov 2026). Each event belongs to a funder. initial = first batch of a new funder or drawdown (earlier SLA, special support) */
 const RB_WEEK = [16, 17, 18, 19, 20, 21, 22];
 const RB_EVENTS = [
