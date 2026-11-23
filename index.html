@@ -9418,6 +9418,23 @@ function ifApplyPrefill(d) {
   .rb-ms-dd { display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid #E5E7EB; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.14); max-height:270px; overflow-y:auto; z-index:30; padding:4px 0; }
   .rb-ms-grp { padding:7px 14px 3px; font-size:12px; color:#9CA3AF; }
   .rb-ms-opt { padding:8px 14px 8px 22px; font-size:13px; color:#111827; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .rb-ms-dd { max-height:none; overflow:hidden; padding:0; }
+  .rb-ms-colL { width:46%; border-right:1px solid #F0F1F3; padding:6px; max-height:270px; overflow-y:auto; box-sizing:border-box; }
+  .rb-ms-dd.one { right:auto; width:46%; min-width:250px; } .rb-ms-dd.one .rb-ms-colL { width:100%; border-right:none; }
+  .rb-ms-hint { padding:14px 10px; font-size:12.5px; color:#9CA3AF; }
+  .rb-ms-colR { flex:1; padding:6px; max-height:270px; overflow-y:auto; }
+  .rb-ms-fold { display:flex; align-items:center; gap:8px; padding:9px 10px; cursor:pointer; font-size:13px; color:#111827; border-radius:8px; }
+  .rb-ms-fold:hover { background:#F3F4F6; } .rb-ms-fold.act { background:#E6F0FF; font-weight:600; }
+  .rb-ms-fn { flex:1; display:flex; flex-direction:column; line-height:1.25; } .rb-ms-fn small { font-size:11px; color:#9CA3AF; font-weight:400; }
+  .rb-ms-arr { color:#6B7280; font-size:16px; }
+  .rb-ms-cb { width:15px; height:15px; border:1.5px solid #9CA3AF; border-radius:3px; display:inline-block; flex:none; position:relative; background:#fff; }
+  .rb-ms-cb.all { background:#2563EB; border-color:#2563EB; }
+  .rb-ms-cb.all::after { content:'✓'; color:#fff; font-size:11px; position:absolute; left:1.5px; top:-2px; font-weight:700; }
+  .rb-ms-cb.some { border-color:#2563EB; }
+  .rb-ms-cb.some::after { content:''; position:absolute; left:2.5px; top:6px; width:7px; height:2px; background:#2563EB; }
+  .rb-ms-child { padding:8px 10px !important; justify-content:flex-start !important; gap:8px; font-weight:400; border-radius:8px; }
+  .rb-ms-child.on { background:#F5F9FF !important; font-weight:500 !important; }
+  .rb-fchip { background:#E6F0FF; }
   .rb-ms-opt:hover { background:#F3F4F6; } .rb-ms-opt.on { background:#E6F0FF; font-weight:600; } .rb-ms-opt .ck { color:#2563EB; font-weight:700; }
   .rb-meta { font-size:11.5px; color:#6B7280; margin-top:3px; }
   .rb-flowline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:#374151; margin:2px 0 14px; }
@@ -9734,13 +9751,37 @@ function rbTagInfo() {
   el.innerHTML = free.length ? `<div style="font-size:12.5px;color:#374151;margin-bottom:5px;">${free.map(k => '<b>' + rbMs(k).name + '</b>').join(', ')} ${free.length > 1 ? 'are' : 'is'} not in an ops flow table, so enter who to tag here.</div><div class="pic-cell" id="pic-cfg-0">${picInner('cfg', 0)}</div>` : '';
 }
 const rbLeadChk = (l, on) => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-lead" value="${l.id}"${on ? ' checked' : ''}> ${rbLeadText(l)}</label>`;
-let rbMsSel = [], rbMsFlow = 'abs';
-function rbMsShow(on) { document.getElementById('rb-ms-dd').style.display = on ? 'block' : 'none'; document.getElementById('rb-ms-box').classList.toggle('open', on); if (on) rbMsRender(); }
+let rbMsSel = [], rbMsFlow = 'abs', rbMsAct = '';
+function rbMsShow(on) { document.getElementById('rb-ms-dd').style.display = on ? 'flex' : 'none'; document.getElementById('rb-ms-box').classList.toggle('open', on); if (on) rbMsRender(); }
+// Two columns: folders on the left, the milestones of the open folder on the right. Clicking a folder ticks all of its milestones.
+function rbMsFolders() {
+  const cat = rbCatalog(rbMsFlow), fl = RB_FLOWS.find(f => f.k === rbMsFlow);
+  return [
+    { id: 'rev', name: 'Revolving milestones', sub: fl.name, items: cat.rev },
+    { id: 'mon', name: 'Monthly milestones', sub: 'Flow B only', items: cat.mon },
+    { id: 'lc', name: 'Life cycle milestones', sub: 'Initial Cutoff Date, etc.', items: cat.dd.concat(cat.lc) }
+  ].filter(f => f.items.length);
+}
 function rbMsRender() {
-  const q = document.getElementById('rb-ms-q').value.trim().toLowerCase(), cat = rbCatalog(rbMsFlow), fl = RB_FLOWS.find(f => f.k === rbMsFlow);
-  document.getElementById('rb-ms-chips').innerHTML = rbMsSel.map(k => `<span class="rb-pchip">${rbMs(k).name}<b onmousedown="rbMsToggle('${k}',event)">×</b></span>`).join('');
-  const grp = (label, arr) => { arr = arr.filter(c => !q || c.name.toLowerCase().includes(q)); return arr.length ? `<div class="rb-ms-grp">${label}</div>` + arr.map(c => `<div class="rb-ms-opt${rbMsSel.includes(c.k) ? ' on' : ''}" onmousedown="rbMsToggle('${c.k}',event)"><span>${c.name}</span>${rbMsSel.includes(c.k) ? '<span class="ck">✓</span>' : ''}</div>`).join('') : ''; };
-  document.getElementById('rb-ms-dd').innerHTML = (grp('ABS Plan · revolving (' + fl.name + ')', cat.rev) + grp('ABS Plan · monthly (Flow B only)', cat.mon) + grp('Life cycle', cat.dd.concat(cat.lc))) || '<div class="rb-ms-grp" style="padding:12px 14px;">No milestone matches</div>';
+  const q = document.getElementById('rb-ms-q').value.trim().toLowerCase(), folders = rbMsFolders();
+  const vis = f => f.items.filter(c => !q || c.name.toLowerCase().includes(q));
+  let chips = '';
+  folders.forEach(f => {
+    const on = f.items.filter(c => rbMsSel.includes(c.k));
+    if (on.length && on.length === f.items.length) chips += `<span class="rb-pchip rb-fchip">All ${f.name.toLowerCase()} (${on.length})<b onmousedown="rbMsFolder('${f.id}',event,true)">×</b></span>`;
+    else chips += on.map(c => `<span class="rb-pchip">${c.name}<b onmousedown="rbMsToggle('${c.k}',event)">×</b></span>`).join('');
+  });
+  document.getElementById('rb-ms-chips').innerHTML = chips;
+  const shown = folders.filter(f => vis(f).length);
+  if (!shown.find(f => f.id === rbMsAct)) rbMsAct = (q && shown.length) ? shown[0].id : '';
+  const left = shown.map(f => {
+    const n = f.items.filter(c => rbMsSel.includes(c.k)).length, st = n === 0 ? '' : (n === f.items.length ? ' all' : ' some');
+    return `<div class="rb-ms-fold${f.id === rbMsAct ? ' act' : ''}" onmousedown="rbMsFolder('${f.id}',event)"><span class="rb-ms-cb${st}"></span><span class="rb-ms-fn">${f.name}<small>${f.sub}${n ? ' · ' + n + '/' + f.items.length : ''}</small></span><span class="rb-ms-arr">›</span></div>`;
+  }).join('');
+  const act = shown.find(f => f.id === rbMsAct);
+  const right = !act ? '' : vis(act).map(c => `<div class="rb-ms-opt rb-ms-child${rbMsSel.includes(c.k) ? ' on' : ''}" onmousedown="rbMsToggle('${c.k}',event)"><span class="rb-ms-cb${rbMsSel.includes(c.k) ? ' all' : ''}"></span><span>${c.name}</span></div>`).join('');
+  const dd = document.getElementById('rb-ms-dd'); dd.classList.toggle('one', !act);
+  dd.innerHTML = shown.length ? `<div class="rb-ms-colL">${left}</div>${act ? `<div class="rb-ms-colR">${right}</div>` : ''}` : '<div class="rb-ms-grp" style="padding:12px 14px;">No milestone matches</div>';
 }
 function rbMsToggle(k, e) {
   e.preventDefault(); e.stopPropagation();
@@ -9748,9 +9789,22 @@ function rbMsToggle(k, e) {
   rbMsRender(); rbModalHint();
   document.getElementById('rb-ms-q').focus();
 }
-document.addEventListener('mousedown', e => { if (!e.target.closest || !e.target.closest('.rb-ms-wrap')) { const dd = document.getElementById('rb-ms-dd'); if (dd && dd.style.display === 'block') rbMsShow(false); } });
+function rbMsFolder(id, e, clear) {
+  e.preventDefault(); e.stopPropagation();
+  const q = document.getElementById('rb-ms-q').value.trim().toLowerCase(), f = rbMsFolders().find(x => x.id === id);
+  const keys = (clear ? f.items : f.items.filter(c => !q || c.name.toLowerCase().includes(q))).map(c => c.k);
+  const all = keys.every(k => rbMsSel.includes(k));
+  // all ticked and the folder is already open (or the chip x): untick them; otherwise tick them all and open the folder
+  if (all && (clear || rbMsAct === id)) rbMsSel = rbMsSel.filter(k => !keys.includes(k));
+  else rbMsSel = rbMsSel.concat(keys.filter(k => !rbMsSel.includes(k)));
+  if (!clear) rbMsAct = id;
+  rbMsRender(); rbModalHint();
+  document.getElementById('rb-ms-q').focus();
+}
+document.addEventListener('mousedown', e => { if (!e.target.closest || !e.target.closest('.rb-ms-wrap')) { const dd = document.getElementById('rb-ms-dd'); if (dd && dd.style.display === 'flex') rbMsShow(false); } });
 function rbFillMs(flow, ms) {
   rbMsFlow = flow; rbMsSel = ms ? [].concat(ms) : [];
+  rbMsAct = '';
   document.getElementById('rb-ms-q').value = ''; rbMsShow(false); rbMsRender(); rbModalHint();
 }
 function rbFillFunders(flow, sel) {
