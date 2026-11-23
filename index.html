@@ -1797,16 +1797,17 @@ tr.drag-over { border-top: 2px solid #2563EB; }
               <tr>
                 <th style="width:44px;">#</th>
                 <th>Milestone</th>
-                <th style="width:100px;">Type</th>
-                <th style="width:128px;">Rule</th>
-                <th style="width:150px;">Offset from</th>
-                <th style="width:160px;">
+                <th style="width:90px;">Type</th>
+                <th style="width:112px;">Rule</th>
+                <th style="width:136px;">Offset from</th>
+                <th style="width:130px;">
                   <span style="display:inline-flex;align-items:center;gap:5px;">
                     Offset (days)
                     <span class="tip">ⓘ<span class="tip-box"><strong>T = cycle end date + 1</strong><br>The day after the current cycle's last day. Example: if cycle is Day 1–5, T = Day 6.</span></span>
                   </span>
                 </th>
-                <th style="width:300px;">
+                <th style="width:200px;"><span style="display:inline-flex;align-items:center;gap:5px;">PIC <span class="tip">ⓘ<span class="tip-box"><strong>Who gets tagged</strong><br>Emails of the people @-mentioned when a reminder is sent for this milestone. SeaTalk finds each person from the email. Leave empty to tag nobody.</span></span></span></th>
+                <th style="width:240px;">
   <label class="hol-header-chk" id="hol-header-lbl" aria-label="Select all holiday regions">
     <input type="checkbox" id="hol-select-all-header" checked onclick="onHolHeaderClick(this)">
     <span class="hol-header-chk-box"></span>
@@ -1837,11 +1838,12 @@ tr.drag-over { border-top: 2px solid #2563EB; }
               <tr>
                 <th style="width:44px;">#</th>
                 <th>Milestone</th>
-                <th style="width:100px;">Type</th>
-                <th style="width:128px;">Rule</th>
-                <th style="width:190px;">Offset from</th>
-                <th style="width:160px;">Offset (days)</th>
-                <th style="width:300px;">Skip Holidays of</th>
+                <th style="width:90px;">Type</th>
+                <th style="width:112px;">Rule</th>
+                <th style="width:150px;">Offset from</th>
+                <th style="width:140px;">Offset (days)</th>
+                <th style="width:200px;"><span style="display:inline-flex;align-items:center;gap:5px;">PIC <span class="tip">ⓘ<span class="tip-box"><strong>Who gets tagged</strong><br>Emails of the people @-mentioned when a reminder is sent for this milestone. SeaTalk finds each person from the email. Leave empty to tag nobody.</span></span></span></th>
+                <th style="width:240px;">Skip Holidays of</th>
               </tr>
             </thead>
             <tbody id="monthly-ms-tbody"></tbody>
@@ -5735,6 +5737,34 @@ function monthlyRefChoices(list, m) {
   return list.filter(o => o.key !== m.key && !monthlyDependsOn(list, o.key, m.key));
 }
 
+/* ── PIC column: emails tagged when a reminder is sent for a milestone (scope rev = revolving table, mon = monthly table, cfg = Notif Config modal) ── */
+const PIC_EMAIL = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+function picListOf(scope, i) {
+  if (scope === 'cfg') return rbCfgPic;
+  const m = (scope === 'rev' ? OPS_FLOW_MILESTONES : MONTHLY_MILESTONES)[currentOpsFlow][i];
+  return m.pic || (m.pic = []);
+}
+function picInner(scope, i, err) {
+  const l = picListOf(scope, i), id = scope + '-' + i;
+  return `<div class="rb-picbox">${l.map((e, j) => `<span class="rb-pchip">${e}<b onclick="picDel('${scope}',${i},${j})">×</b></span>`).join('')}<input class="rb-picin" id="picin-${id}" placeholder="${l.length ? 'Add another email' : 'name@company.com'}, press Enter" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();picAdd('${scope}',${i},this,true);}" onblur="picAdd('${scope}',${i},this,false)" /></div><div class="rb-picerr">${err || ''}</div>`;
+}
+const picCell = (scope, i) => `<div class="pic-cell" id="pic-${scope}-${i}">${picInner(scope, i)}</div>`;
+function picRefresh(scope, i, focus, err, bad) {
+  const box = document.getElementById('pic-' + scope + '-' + i); if (!box) return;
+  box.innerHTML = picInner(scope, i, err);
+  const inp = document.getElementById('picin-' + scope + '-' + i);
+  if (bad) inp.value = bad;
+  if (focus || bad) inp.focus();
+  if (scope !== 'cfg' && typeof rbRenderRules === 'function') { rbRenderRules(); rbPreview(); }
+}
+function picAdd(scope, i, el, refocus) {
+  const parts = el.value.split(/[\s,;]+/).filter(Boolean); if (!parts.length) return;
+  const l = picListOf(scope, i), bad = parts.filter(x => !PIC_EMAIL.test(x));
+  parts.filter(x => PIC_EMAIL.test(x) && !l.includes(x)).forEach(x => l.push(x));
+  picRefresh(scope, i, refocus, bad.length ? bad.join(', ') + (bad.length > 1 ? ' are not valid email addresses' : ' is not a valid email address') : '', bad.join(' '));
+}
+function picDel(scope, i, j) { picListOf(scope, i).splice(j, 1); picRefresh(scope, i, false); }
+
 function renderMonthlyMilestones(type) {
   const card = document.getElementById('monthly-ms-card');
   const tbody = document.getElementById('monthly-ms-tbody');
@@ -5784,6 +5814,7 @@ function renderMonthlyMilestones(type) {
       <td style="padding:10px 14px;">${ruleCell}</td>
       <td style="padding:10px 14px;">${offsetFromCell}</td>
       <td style="padding:10px 14px;">${offsetCell}</td>
+      <td style="padding:10px 14px;">${picCell('mon', i)}</td>
       <td style="padding:10px 14px;">${holCell}</td>
     </tr>`;
   }).join('');
@@ -5944,6 +5975,7 @@ function renderMilestoneTable(type) {
       <td style="padding:10px 14px;">${ruleCell}</td>
       <td style="padding:10px 14px;">${offsetFromCell}</td>
       <td style="padding:10px 14px;">${offsetCell}</td>
+      <td style="padding:10px 14px;">${picCell('rev', i)}</td>
       <td style="padding:10px 14px;">${holCell}</td>
     </tr>`;
   }).join('');
@@ -9336,7 +9368,7 @@ function ifApplyPrefill(d) {
 </script>
 
 <!-- ══════════════════════════════════════
-     FLOW: Ticket Center · Reminder Bot Config (Milestone Reminder tab is new)
+     FLOW: Ticket Center · Reminder Bot Config (Notif Config gets a new Target Event: Milestone Reminder. The weekly digest is fixed, Mon 09:30, no config)
 ══════════════════════════════════════ -->
 <style>
   .rb-tabs { display:flex; gap:26px; border-bottom:1px solid #E5E7EB; padding:0 24px; }
@@ -9365,9 +9397,19 @@ function ifApplyPrefill(d) {
   .rb-pchip { display:inline-flex; align-items:center; gap:6px; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; border-radius:12px; padding:2px 6px 2px 10px; font-size:12px; }
   .rb-pchip b { cursor:pointer; color:#6B7280; font-size:13px; line-height:1; } .rb-pchip b:hover { color:#DC2626; }
   .rb-picin { border:none; outline:none; font-size:12.5px; min-width:200px; flex:1; padding:3px 2px; }
+  .pic-cell .rb-picin { min-width:90px; } .pic-cell .rb-picbox { padding:4px 6px; gap:4px; } .pic-cell .rb-pchip { font-size:11.5px; }
   .rb-picerr { color:#DC2626; font-size:11.5px; margin-top:3px; min-height:0; }
   .rb-fdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
   .rb-msg { background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px; padding:12px 14px; font-size:12.5px; color:#374151; line-height:1.6; white-space:pre-wrap; font-family: ui-monospace, Menlo, monospace; }
+  .rb-ms-wrap { position:relative; }
+  .rb-ms-box { display:flex; flex-wrap:wrap; gap:6px; align-items:center; border:1px solid #D1D5DB; border-radius:8px; padding:6px 10px; background:#fff; min-height:40px; cursor:text; }
+  .rb-ms-box.open { border-color:#2563EB; box-shadow:0 0 0 2px rgba(37,99,235,0.15); }
+  .rb-ms-box input { border:none; outline:none; font-size:13px; flex:1; min-width:140px; padding:3px 2px; background:transparent; }
+  .rb-ms-dd { display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid #E5E7EB; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.14); max-height:270px; overflow-y:auto; z-index:30; padding:4px 0; }
+  .rb-ms-grp { padding:7px 14px 3px; font-size:12px; color:#9CA3AF; }
+  .rb-ms-opt { padding:8px 14px 8px 22px; font-size:13px; color:#111827; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .rb-ms-opt:hover { background:#F3F4F6; } .rb-ms-opt.on { background:#E6F0FF; font-weight:600; } .rb-ms-opt .ck { color:#2563EB; font-weight:700; }
+  .rb-meta { font-size:11.5px; color:#6B7280; margin-top:3px; }
   .rb-flowline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:#374151; margin:2px 0 14px; }
   .rb-flowline .b { background:#fff; border:1px solid #D1D5DB; border-radius:6px; padding:6px 10px; } .rb-flowline .a { color:#9CA3AF; }
 </style>
@@ -9402,8 +9444,7 @@ function ifApplyPrefill(d) {
         <div class="section-card">
           <div class="rb-tabs">
             <div class="rb-tab" data-t="rules" onclick="rbTab('rules')">Rules Library</div>
-            <div class="rb-tab" data-t="notif" onclick="rbTab('notif')">Notif Config</div>
-            <div class="rb-tab active" data-t="ms" onclick="rbTab('ms')">Milestone Reminder<span class="rb-new">NEW</span></div>
+            <div class="rb-tab active" data-t="notif" onclick="rbTab('notif')">Notif Config</div>
           </div>
           <!-- existing tabs (pending approval tickets), kept short -->
           <div class="rb-pane" id="rb-pane-rules">
@@ -9414,66 +9455,23 @@ function ifApplyPrefill(d) {
               <tr><td>17:10</td><td><span class="rb-link">Edit</span><span class="rb-link" style="color:#9CA3AF;">Delete</span></td></tr>
             </tbody></table>
             <div class="rb-h" style="margin-top:26px;">Milestone Lead Time Rules <span class="rb-new">NEW</span></div>
-            <div class="rb-sub">How many business days before a milestone to remind, and at what time. A milestone rule (Milestone Reminder tab) picks one or more of these, so a lead time is set once and reused.</div>
-            <table class="rb-tbl"><thead><tr><th>Lead time</th><th>Reminder Time</th><th style="width:140px;">Action</th></tr></thead><tbody id="rb-lead-body"></tbody></table>
+            <div class="rb-sub">How many business days before a milestone to remind, and at what time. A Milestone Reminder config (Notif Config) picks one or more of these as its Daily Reminders, so a lead time is set once and reused.</div>
+            <table class="rb-tbl" style="margin-bottom:22px;"><thead><tr><th>Lead time</th><th>Reminder Time</th><th style="width:140px;">Action</th></tr></thead><tbody id="rb-lead-body"></tbody></table>
+
           </div>
-          <div class="rb-pane" id="rb-pane-notif">
-            <div class="rb-h">Notif Config <span style="font-size:12px;font-weight:400;color:#6B7280;">· reminders for pending approval tickets</span></div>
-            <table class="rb-tbl"><thead><tr><th>Config ID</th><th>Modules</th><th>Daily Reminders</th><th>EOD Escalation</th><th>Target Event</th><th>Action</th></tr></thead><tbody>
-              <tr><td>5</td><td><span class="rb-chip">ABS Batch Release</span><span class="rb-chip">abs batch settle</span><span class="rb-chip">Funder Fee Config</span></td><td>18:54, 18:55</td><td>-</td><td>Pending Approval</td><td><span class="rb-link">Edit</span><span class="rb-link del">Delete</span></td></tr>
-              <tr><td>6</td><td><span class="rb-chip">Simple Traffic Control</span><span class="rb-chip">Rule Config</span></td><td>18:00</td><td>-</td><td>Pending Approval</td><td><span class="rb-link">Edit</span><span class="rb-link del">Delete</span></td></tr>
-            </tbody></table>
-          </div>
-          <!-- NEW: Milestone Reminder -->
-          <div class="rb-pane active" id="rb-pane-ms">
-            <div class="rb-flowline">
-              <span class="b">Saved milestones<br><span style="color:#9CA3AF;">ABS Plan · Drawdown schedule · Life cycle</span></span><span class="a">→</span>
-              <span class="b">Milestone rules<br><span style="color:#9CA3AF;">what, who, when</span></span><span class="a">→</span>
-              <span class="b">Reminder bot<br><span style="color:#9CA3AF;">daily reminder + weekly digest</span></span><span class="a">→</span>
-              <span class="b">DE / BE / ops<br><span style="color:#9CA3AF;">replaces the weekly email</span></span>
+          <div class="rb-pane active" id="rb-pane-notif">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div class="rb-h">Notif Config <span style="font-size:12px;font-weight:400;color:#6B7280;">· pending approval tickets and milestones</span></div><div class="rb-sub" style="margin:2px 0 0;">The weekly milestone digest needs no config: every Monday at 09:30 SGT it lists all milestones of that week on SeaTalk.</div></div>
+              <div><button class="btn-outline-sm" style="padding:7px 14px;font-size:12.5px;margin-right:8px;" onclick="rbPreviewOpen()">Preview milestone messages</button><button class="btn-primary-lg" style="padding:7px 16px;font-size:12.5px;" onclick="rbCfgOpen()">+ Add Config</button></div>
             </div>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;"><div class="rb-h">Weekly digest <span style="font-size:12px;font-weight:400;color:#6B7280;">· TH</span></div><div class="toggle" id="rb-dg-on" onclick="this.classList.toggle('off');rbDg()"></div></div>
-            <div class="rb-sub">One text message on SeaTalk that lists the coming week's milestones, built from the rules below. This portal is TH only, so there is one digest. It replaces the schedule email that is sent by hand every week. The daily reminders are text messages on the same channel.</div>
-            <div class="section-card" style="margin-bottom:22px;box-shadow:none;"><div class="section-body" style="padding:16px 18px;">
-              <div style="display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:14px 20px;margin-bottom:16px;">
-                <div><label class="form-label">Send on</label><select id="rb-dg-day" class="form-select" style="width:100%;" onchange="rbDg()"><option value="Mon">Monday</option><option value="Tue">Tuesday</option><option value="Fri">Friday</option></select></div>
-                <div><label class="form-label">Time (SGT)</label><input id="rb-dg-time" type="time" class="form-input" value="09:00" oninput="rbDg()" /></div>
-                <div><label class="form-label">Covers</label><select id="rb-dg-cov" class="form-select" style="width:100%;" onchange="rbDg()"><option value="week">That week, Mon to Sun</option><option value="next7">The next 7 days</option></select></div>
-                </div>
-              <div class="form-label" style="margin-bottom:8px;">What to include</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 28px;font-size:13px;color:#374151;">
-                <div><div class="rb-sub" style="margin-bottom:6px;">Ops flows</div><div id="rb-dg-flows" style="display:flex;flex-direction:column;gap:6px;"></div></div>
-                <div><div class="rb-sub" style="margin-bottom:6px;">Milestone types</div><div id="rb-dg-srcs" style="display:flex;flex-direction:column;gap:6px;"></div></div>
-              </div>
-                          </div></div>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;"><div class="rb-h">Milestone rules</div><div><button class="btn-outline-sm" style="padding:7px 14px;font-size:12.5px;margin-right:8px;" onclick="rbAddAll()">Add all milestones of this flow</button><button class="btn-primary-lg" style="padding:7px 16px;font-size:12.5px;" onclick="rbOpen()">+ Add Rule</button></div></div>
-            <div class="rb-sub">Rules are set per ops flow, because each flow has its own funders and its own revolving milestones. Each rule picks a milestone, who owns it and when to remind. <b>Runs during</b> comes from the funder's Life cycle dates, so a reminder is only sent inside its window.</div>
-            <div id="rb-flowbar" style="margin-bottom:8px;"></div>
-            <div class="rb-sub" id="rb-flowhint" style="margin-bottom:10px;"></div>
-            <table class="rb-tbl" style="margin-bottom:22px;"><thead><tr><th>Rule</th><th>Milestone</th><th>Funders</th><th>Notify</th><th>Remind</th><th>Runs during</th><th>Status</th><th>Action</th></tr></thead><tbody id="rb-rules-body"></tbody></table>
-
-            <div class="rb-h">PIC directory</div>
-            <div class="rb-sub">Who is tagged for each role and region. Enter email addresses: SeaTalk finds each person from the email and tags them in the group. A role can hold several people. A rule tags every role it notifies.</div>
-            <table class="rb-tbl" style="margin-bottom:22px;max-width:760px;"><thead><tr><th style="width:130px;">Role</th><th style="width:90px;">Region</th><th>PIC emails</th></tr></thead><tbody>
-              <tr><td>DE</td><td>TH</td><td><div id="rb-pic-DE"></div></td></tr>
-              <tr><td>BE</td><td>TH</td><td><div id="rb-pic-BE"></div></td></tr>
-              <tr><td>Funding ops</td><td>TH</td><td><div id="rb-pic-OPS"></div></td></tr>
-            </tbody></table>
-
-            <div class="rb-h">Preview · TH · 16 to 22 Nov 2026 <span style="font-size:12px;font-weight:400;color:#6B7280;">(the weekly digest, then the daily reminder of a day you pick)</span></div>
-            <div class="rb-sub">Every funder in the region goes into the same message, whatever its ops flow (A, B or C), so one day can hold a different milestone for each funder. Red, and a * in the text, marks an initial milestone of a new funder or drawdown, with an earlier SLA and extra support.</div>
-            <div id="rb-dg-line" style="font-size:12.5px;color:#374151;margin-bottom:10px;"></div>
-            <div id="rb-fbar" style="margin-bottom:12px;"></div>
-            <div style="font-size:12px;font-weight:600;color:#374151;margin:2px 0 6px;">Weekly digest · calendar preview <span style="font-weight:400;color:#6B7280;">(for this portal only, SeaTalk cannot show a calendar. Click a day to see its daily reminder.)</span></div>
-            <div class="rb-cal" id="rb-cal"></div>
-            <div style="font-size:12px;font-weight:600;color:#374151;margin:18px 0 6px;">Weekly digest · the text message sent on SeaTalk</div>
-            <div class="rb-msg" id="rb-dgmsg"></div>
-            <div style="height:10px;"></div>
-            <div style="font-size:12px;font-weight:600;color:#374151;margin:10px 0 6px;" id="rb-msg-title"></div>
-            <div class="rb-msg" id="rb-msg"></div>
-            <div style="height:14px;"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin:10px 0 12px;font-size:12.5px;color:#374151;">
+              <span>Target Event</span>
+              <select class="form-select" id="rb-flt-te" style="width:210px;padding:6px 10px;" onchange="rbTE=this.value;rbRenderRules()"><option value="all">All</option><option value="pa">Pending Approval</option><option value="mr">Milestone Reminder</option></select>
+              <span style="margin-left:8px;">Ops flow</span>
+              <select class="form-select" id="rb-flt-fl" style="width:170px;padding:6px 10px;" onchange="rbFlowF=this.value;rbRenderRules()"><option value="all">All</option></select>
+              <span class="rb-meta" id="rb-flt-note" style="margin:0 0 0 6px;"></span>
+            </div>
+            <table class="rb-tbl" style="margin-bottom:22px;"><thead><tr><th style="width:80px;">Config ID</th><th>Modules</th><th>Daily Reminders</th><th>EOD Escalation</th><th>Target Event</th><th style="width:110px;">Action</th></tr></thead><tbody id="rb-cfg-body"></tbody></table>
           </div>
         </div>
       </div>
@@ -9494,24 +9492,51 @@ function ifApplyPrefill(d) {
   </div>
 </div>
 <div class="modal-overlay" id="rb-modal">
-  <div class="modal" style="width:560px;">
-    <div class="modal-header"><span class="modal-title" id="rb-modal-title">Add milestone rule</span><button class="modal-close" onclick="rbClose()">✕</button></div>
-    <div class="modal-body" style="padding:8px 24px 18px;">
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Milestone <span class="req">*</span></label><select class="form-select" id="rb-f-ms" style="width:100%;" onchange="rbModalHint()"></select><div class="form-hint" id="rb-f-hint" style="margin-top:4px;"></div></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Funders</label><div id="rb-f-funders" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#374151;"></div><div class="form-hint" style="margin-top:4px;">Leave all ticked to apply the rule to every funder in the region.</div></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Notify <span class="req">*</span></label><div id="rb-f-owners" style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#374151;"></div><div class="form-hint" style="margin-top:4px;">Everyone ticked is tagged in the reminder. Roles that are not ticked are not told, for example ops need not hear about a cutoff.</div></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Reminder text (optional)</label><input class="form-input" id="rb-f-text" placeholder="e.g. Loan list ready" /></div>
-      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Remind <span class="req">*</span></label><div id="rb-f-leads" style="display:flex;gap:8px 18px;flex-wrap:wrap;font-size:13px;color:#374151;"></div>
-        <div class="form-hint" style="margin-top:6px;">Lead times come from the Rules Library. Tick several to send more than one reminder, for example the day before and on the day. Need another? <span class="rb-link" onclick="rbClose();rbTab('rules');rbOpenLib(undefined, 'lead')">Add a lead time in the Rules Library</span></div></div>
+  <div class="modal" style="width:600px;">
+    <div class="modal-header"><span class="modal-title" id="rb-modal-title">Add Config</span><button class="modal-close" onclick="rbClose()">✕</button></div>
+    <div class="modal-body" style="padding:8px 24px 18px;max-height:70vh;overflow-y:auto;">
+      <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Config ID</label><input class="form-input" id="rb-c-id" readonly style="background:#F3F4F6;color:#6B7280;" /></div>
+      <div class="form-group" style="margin-bottom:14px;"><label class="form-label">Target Event <span class="req">*</span></label><select class="form-select" id="rb-c-te" style="width:100%;" onchange="rbCfgTE()"><option value="pa">Pending Approval</option><option value="mr">Milestone Reminder</option></select></div>
+
+      <div id="rb-sec-pa"><div class="form-hint">Unchanged from today: pick the Operation Modules, the Daily Reminders and the EOD Escalation Interval for pending approval tickets.</div></div>
+
+      <div id="rb-sec-mr">
+        <div class="form-hint" style="margin:-4px 0 12px;">Reminds DE, BE or ops of a saved milestone of a funder (ABS Plan or Life cycle), and replaces the weekly schedule email. It is only sent inside the funder's Life cycle window.</div>
+        <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Ops flow <span class="req">*</span></label><select class="form-select" id="rb-c-flow" style="width:100%;" onchange="rbCfgFlow()"></select><div class="form-hint" style="margin-top:4px;">Each ops flow has its own funders and its own revolving milestones. Monthly milestones exist only in Flow B.</div></div>
+        <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Milestone <span class="req">*</span></label><div class="rb-ms-wrap"><div class="rb-ms-box" id="rb-ms-box" onclick="document.getElementById('rb-ms-q').focus()"><span id="rb-ms-chips" style="display:contents;"></span><input id="rb-ms-q" placeholder="Select milestones" autocomplete="off" onfocus="rbMsShow(true)" oninput="rbMsRender()" /></div><div class="rb-ms-dd" id="rb-ms-dd"></div></div><div class="form-hint" id="rb-f-hint" style="margin-top:4px;"></div></div>
+        <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Funders</label><div id="rb-f-funders" style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#374151;"></div><div class="form-hint" style="margin-top:4px;">Leave all ticked to apply the config to every funder in the flow.</div></div>
+        <div class="form-group" id="rb-g-owners" style="margin-bottom:12px;display:none;"><label class="form-label">Who is tagged</label><div id="rb-f-owners"></div></div>
+        <div class="form-group" style="margin-bottom:12px;"><label class="form-label">Daily Reminders <span class="req">*</span></label><div id="rb-f-leads" style="display:flex;gap:8px 18px;flex-wrap:wrap;font-size:13px;color:#374151;"></div>
+          <div class="form-hint" style="margin-top:6px;">Lead times come from the Rules Library. Tick several to send more than one reminder, for example the day before and on the day. Need another? <span class="rb-link" onclick="rbClose();rbTab('rules');rbOpenLib(undefined, 'lead')">Add a lead time in the Rules Library</span></div></div>
+        <div class="form-group" style="margin-bottom:4px;"><label class="form-label">EOD Escalation</label><div class="form-hint">Not in this version.</div></div>
+      </div>
+
       <div id="rb-f-err" style="color:#DC2626;font-size:12px;margin-top:10px;"></div>
     </div>
     <div class="modal-footer"><button class="btn-outline-sm" style="padding:8px 20px;font-size:13px;" onclick="rbClose()">Cancel</button><button class="btn-primary-lg" style="font-size:13px;padding:8px 20px;" onclick="rbSave()">Save</button></div>
   </div>
 </div>
+<div class="modal-overlay" id="rb-prev-modal">
+  <div class="modal" style="width:1060px;max-width:96vw;">
+    <div class="modal-header"><span class="modal-title">Preview · TH · 16 to 22 Nov 2026</span><button class="modal-close" onclick="document.getElementById('rb-prev-modal').classList.remove('open')">✕</button></div>
+    <div class="modal-body" style="padding:12px 24px 18px;max-height:76vh;overflow-y:auto;">
+      <div class="rb-sub">What the weekly digest (fixed) and the Milestone Reminder configs would send this week. Every funder in the region goes into the same message, whatever its ops flow (A, B or C). Red, and a * in the text, marks an initial milestone of a new funder or drawdown, with an earlier SLA and extra support.</div>
+      <div id="rb-dg-line" style="font-size:12.5px;color:#374151;margin-bottom:10px;"></div>
+      <div id="rb-fbar" style="margin-bottom:12px;"></div>
+      <div style="font-size:12px;font-weight:600;color:#374151;margin:2px 0 6px;">Weekly digest · calendar preview <span style="font-weight:400;color:#6B7280;">(for this portal only, SeaTalk cannot show a calendar. Click a day to see its daily reminder.)</span></div>
+      <div class="rb-cal" id="rb-cal"></div>
+      <div style="font-size:12px;font-weight:600;color:#374151;margin:18px 0 6px;">Weekly digest · the text message sent on SeaTalk</div>
+      <div class="rb-msg" id="rb-dgmsg"></div>
+      <div style="font-size:12px;font-weight:600;color:#374151;margin:16px 0 6px;" id="rb-msg-title"></div>
+      <div class="rb-msg" id="rb-msg"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-outline-sm" style="padding:8px 20px;font-size:13px;" onclick="document.getElementById('rb-prev-modal').classList.remove('open')">Close</button></div>
+  </div>
+</div>
 <script>
 /* ── Reminder Bot Config → Milestone Reminder (mock) ──
    Rules are set per ops flow, because each ops flow has its own ABS Plan revolving milestones and its own funders.
-   Monthly milestones exist only in Flow B. Drawdown schedule and Life cycle milestones are common to every flow.
+   Monthly milestones exist only in Flow B. Life cycle milestones (initial milestones of a drawdown, and the fixed Life cycle dates) are common to every flow.
    "Runs during" comes from the source, so the funder's Life cycle dates decide which reminders are active. */
 const RB_FLOWS = [
   { k: 'abs',     name: 'Flow A · ABS Gross' },
@@ -9521,7 +9546,7 @@ const RB_FLOWS = [
 const RB_SRC = {
   rev: { label: 'ABS Plan · revolving', win: 'Revolving period' },
   mon: { label: 'ABS Plan · monthly', win: 'Revolving period' },
-  dd:  { label: 'Drawdown schedule', win: 'Each drawdown' },
+  dd:  { label: 'Life cycle', win: 'Each drawdown' },   // shown together with lc as one Life cycle type; the window differs
   lc:  { label: 'Life cycle', win: 'Fixed date' }
 };
 const RB_FIXED = {
@@ -9538,8 +9563,16 @@ const rbFunder = k => RB_FUNDERS.find(f => f.k === k) || { name: k, c: '#374151'
 const rbFlowLetter = k => 'ABC'[RB_FLOWS.findIndex(f => f.k === k)] || '';
 const rbFundersOf = flow => RB_FUNDERS.filter(f => f.flow === flow);
 let rbFilter = RB_FUNDERS.map(f => f.k);   // funders shown in the preview
-let rbFlow = 'abs';                        // ops flow whose rules are shown
-let RB_PIC = { DE: ['de.pic@example.com'], BE: ['be.pic@example.com'], OPS: ['ops.pic@example.com'] };   // emails; SeaTalk resolves each person from the email
+let rbFlowF = 'all', rbTE = 'all';         // Notif Config filters: ops flow, target event
+/* Who is tagged lives on the milestone: the PIC column of the ops flow's Milestone Configuration (emails, SeaTalk finds each person).
+   Life cycle milestones are not in an ops flow, so their PIC is set on the config itself (r.pic). */
+let rbCfgPic = [];
+function rbColOf(flow, k) {
+  const t = k.split(':')[0], rest = k.slice(t.length + 1);
+  if (t === 'rev') return (OPS_FLOW_MILESTONES[flow] || []).find(x => x.label === rest) || null;
+  if (t === 'mon') return (MONTHLY_MILESTONES[flow] || []).find(x => x.key === rest) || null;
+  return null;
+}
 
 /* milestone key → { name, src }. rev:<label> = a revolving milestone of an ops flow, mon:<key> = a monthly milestone (Flow B) */
 function rbMs(k) {
@@ -9566,7 +9599,7 @@ let RB_LEADS = [
   { id: 7, n: 0,  time: '07:00' }
 ];
 const rbLeadIdFor = n => (RB_LEADS.find(l => l.n === n && l.time === '09:00') || RB_LEADS[0]).id;
-const rb = (id, flow, ms, owners, text, leads, time, ready, esc, on) => ({ id: id, flow: flow, ms: ms, funders: [], owners: owners, text: text, leads: leads.map(rbLeadIdFor), on: on });
+const rb = (id, flow, ms, owners, text, leads, time, ready, esc, on) => ({ id: id, flow: flow, ms: ms, funders: [], owners: owners, leads: leads.map(rbLeadIdFor), on: on });
 let RB_RULES = [
   // Flow A · ABS Gross
   rb(1, 'abs', 'rev:Weekly Batch Creation Date', ['OPS'], '', [0], '09:00', '', false, true),
@@ -9599,7 +9632,7 @@ const RB_EVENTS = [
   { d: 17, f: 'pacific',   ms: 'rev:Weekly Cutoff Date' },
   { d: 17, f: 'pacific2',  ms: 'dd:iloan' },
   { d: 17, f: 'pacific2',  ms: 'dd:icut' },
-  { d: 17, f: 'pioneer',   ms: 'mon:mreport' },
+  { d: 17, f: 'pioneer',   ms: 'mon:report' },
   { d: 18, f: 'starlight', ms: 'rev:Weekly Eligible Loan List Date' },
   { d: 19, f: 'pacific',   ms: 'rev:Weekly Batch Creation Date' },
   { d: 19, f: 'pacific2',  ms: 'rev:Weekly Cutoff Date' },
@@ -9610,24 +9643,29 @@ const RB_EVENTS = [
   { d: 20, f: 'starlight', ms: 'rev:Weekly Sale Notice Date' },
   { d: 20, f: 'starlight', ms: 'rev:Weekly Deposit Date' }
 ];
-/* Weekly digest settings: when it is sent, and what goes in it (this portal is TH, so there is one digest) */
-let RB_DIGEST = { on: true, day: 'Mon', time: '09:00', cov: 'week', flows: RB_FLOWS.map(f => f.k), sources: Object.keys(RB_SRC) };
-function rbRenderDigest() {
-  document.getElementById('rb-dg-flows').innerHTML = RB_FLOWS.map(f => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-dg-flow" value="${f.k}" checked onchange="rbDg()"> ${f.name}</label>`).join('');
-  document.getElementById('rb-dg-srcs').innerHTML = Object.keys(RB_SRC).map(k => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-dg-src" value="${k}" checked onchange="rbDg()"> ${RB_SRC[k].label}</label>`).join('');
-}
-function rbDg() {
-  const g = id => document.getElementById(id), d = RB_DIGEST;
-  d.on = !g('rb-dg-on').classList.contains('off'); d.day = g('rb-dg-day').value; d.time = g('rb-dg-time').value || '09:00'; d.cov = g('rb-dg-cov').value;
-  d.flows = [...document.querySelectorAll('.rb-dg-flow:checked')].map(e => e.value); d.sources = [...document.querySelectorAll('.rb-dg-src:checked')].map(e => e.value);
-  rbPreview();
-}
-let rbSel = 17, rbEdit = null;
-const rbOwnerLabel = o => o === 'OPS' ? 'Funding ops' : o;
-const rbOwnersText = r => r.owners.map(rbOwnerLabel).join(', ');
-const rbLabel = x => (x.r.text || x.m.name) + ' (' + rbOwnersText(x.r) + ')';
-/* everyone who is tagged: each role can hold several people, separated by commas. Roles that are not ticked are not told. */
-const rbTags = r => r.owners.map(o => (RB_PIC[o] || []).length ? RB_PIC[o].map(e => '@' + e.split('@')[0]).join(' ') : '(no PIC set for ' + rbOwnerLabel(o) + ')').join(' ');
+/* Weekly digest: not configurable. Sent on SeaTalk every Monday at 09:30 SGT, listing all milestones of that week (Mon to Sun). This portal is TH, so there is one digest. */
+const RB_DIGEST = { day: 'Mon', time: '09:30' };
+RB_RULES.forEach(r => { r.cfg = 10 + r.id; });
+/* sample data: seed the PIC emails that used to come from the role directory */
+(function () {
+  const seed = { DE: 'de.pic@example.com', BE: 'be.pic@example.com', OPS: 'ops.pic@example.com' };
+  RB_RULES.forEach(r => {
+    const emails = r.owners.map(o => seed[o]), c = rbColOf(r.flow, r.ms);
+    if (c) c.pic = [...new Set((c.pic || []).concat(emails))]; else r.pic = emails;
+    delete r.owners;
+  });
+  renderMilestoneTable(currentOpsFlow); renderMonthlyMilestones(currentOpsFlow);   // show the seeded PICs
+})();
+/* one config can cover several milestones: rules of the same ops flow with the same Daily Reminders, text and funders share one Config ID */
+(function () {
+  const seen = {};
+  RB_RULES.forEach(r => { const key = [r.flow, r.leads.slice().sort().join('+'), (r.funders || []).join('+')].join('|'); if (seen[key] === undefined) seen[key] = r.cfg; else r.cfg = seen[key]; });
+})();   // Config ID shown in Notif Config (5, 6 are the existing pending approval configs)
+const rbNextCfg = () => Math.max(10, ...RB_RULES.map(r => r.cfg)) + 1;
+let rbSel = 17;
+/* everyone who is tagged: the milestone's PIC emails (ops flow Milestone Configuration), or the config's own PIC for Life cycle milestones */
+const rbPicOf = r => { const c = rbColOf(r.flow, r.ms); return c ? (c.pic || []) : (r.pic || []); };
+const rbTags = r => { const p = rbPicOf(r); return p.length ? p.map(e => '@' + e.split('@')[0]).join(' ') : '(no PIC set)'; };
 const rbLeadN = n => n ? n + ' business day' + (n > 1 ? 's' : '') + ' before' : 'Same day';
 const rbLead = id => RB_LEADS.find(l => l.id === id) || { id: id, n: 0, time: '09:00' };
 const rbLeadText = l => rbLeadN(l.n) + ' · ' + l.time;
@@ -9638,73 +9676,120 @@ function rbTab(t) {
   document.querySelectorAll('.rb-pane').forEach(e => e.classList.toggle('active', e.id === 'rb-pane-' + t));
 }
 function rbToast(t) { const el = document.getElementById('update-toast'); if (el) { el.textContent = t; el.classList.add('visible'); setTimeout(() => el.classList.remove('visible'), 2600); } }
-function rbSetFlow(k) { rbFlow = k; rbRenderRules(); }
+const RB_PA = [   // existing configs (pending approval tickets), unchanged
+  { cfg: 5, mods: ['ABS Batch Release', 'abs batch settle', 'Funder Fee Config'], daily: '18:54, 18:55' },
+  { cfg: 6, mods: ['Simple Traffic Control', 'Rule Config'], daily: '18:00' }
+];
+const rbFlowShort = k => 'Flow ' + rbFlowLetter(k) + ' · ' + RB_FLOWS.find(f => f.k === k).name.split('· ')[1];
 function rbRenderRules() {
-  const fl = RB_FLOWS.find(f => f.k === rbFlow), fs = rbFundersOf(rbFlow);
-  document.getElementById('rb-flowbar').innerHTML = RB_FLOWS.map(f => `<span class="rb-fbtn${f.k === rbFlow ? ' on' : ''}" onclick="rbSetFlow('${f.k}')">${f.name} <span style="color:#9CA3AF;font-weight:400;">· ${rbFundersOf(f.k).length} funder${rbFundersOf(f.k).length === 1 ? '' : 's'}</span></span>`).join('');
-  document.getElementById('rb-flowhint').innerHTML = `<b>${fl.name}</b> covers ${fs.map(f => `<span class="rb-fn" style="background:${f.bg};color:${f.c};margin:0 4px 0 0;">${f.name}</span>`).join('')}. Its revolving milestones come from this flow's ABS Plan. ` + (rbFlow === 'abs-net' ? 'Monthly milestones (Report, Payment, Cutoff) exist only in this flow.' : 'This flow has no monthly milestones.');
-  const rows = RB_RULES.map((r, i) => ({ r: r, i: i })).filter(x => x.r.flow === rbFlow);
-  document.getElementById('rb-rules-body').innerHTML = rows.map(({ r, i }, n) => {
-    const m = rbMs(r.ms), s = RB_SRC[m.src];
-    return `<tr>
-      <td>${n + 1}</td>
-      <td><div style="font-weight:600;color:#111827;">${m.name}</div><span class="rb-chip src-${m.src}">${s.label}</span>${r.text ? `<div style="font-size:11px;color:#6B7280;margin-top:2px;">reminder text: ${r.text}</div>` : ''}</td>
-      <td style="font-size:12px;">${(r.funders && r.funders.length) ? r.funders.map(k => rbFunder(k).name).join(', ') : 'All in this flow'}</td>
-      <td>${r.owners.map(o => `<span class="rb-chip">${rbOwnerLabel(o)}</span>`).join('')}</td>
-      <td>${rbLeadsText(r)}</td>
-      <td style="font-size:12px;">${s.win}</td>
-      <td><div class="toggle${r.on ? '' : ' off'}" onclick="rbToggle(${i})"></div></td>
-      <td style="white-space:nowrap;"><span class="rb-link" onclick="rbOpen(${i})">Edit</span><span class="rb-link del" onclick="rbDelete(${i})">Delete</span></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="8" style="color:#9CA3AF;text-align:center;padding:18px;">No rules in this flow yet. Use Add all milestones to start.</td></tr>';
+  const g = id => document.getElementById(id);
+  g('rb-flt-fl').innerHTML = '<option value="all">All</option>' + RB_FLOWS.map(f => `<option value="${f.k}">${f.name}</option>`).join('');
+  g('rb-flt-fl').value = rbFlowF; g('rb-flt-te').value = rbTE;
+  const rows = [];
+  const showPA = (rbTE === 'all' || rbTE === 'pa') && rbFlowF === 'all';
+  if (showPA) RB_PA.forEach(p => rows.push({ cfg: p.cfg, html: `<tr><td>${p.cfg}</td><td>${p.mods.map(m => `<span class="rb-chip">${m}</span>`).join('')}</td><td>${p.daily}</td><td>-</td><td>Pending Approval</td><td style="white-space:nowrap;"><span class="rb-link">Edit</span><span class="rb-link del">Delete</span></td></tr>` }));
+  if (rbTE === 'all' || rbTE === 'mr') {
+    const cfgs = [];
+    RB_RULES.forEach(r => { if ((rbFlowF === 'all' || r.flow === rbFlowF) && !cfgs.includes(r.cfg)) cfgs.push(r.cfg); });
+    cfgs.forEach(c => {
+      const grp = RB_RULES.filter(r => r.cfg === c), r = grp[0];
+      const fl = (r.funders && r.funders.length) ? r.funders.map(k => rbFunder(k).name).join(', ') : 'All funders';
+      rows.push({ cfg: c, html: `<tr>
+      <td>${c}</td>
+      <td>${grp.map(x => { const m = rbMs(x.ms); return `<span class="rb-chip src-${m.src}" title="${RB_SRC[m.src].label}">${m.name}</span>`; }).join('')}<div class="rb-meta">${rbFlowShort(r.flow)} · ${fl}</div></td>
+      <td>${rbLeadsText(r)}</td><td>-</td><td>Milestone Reminder</td>
+      <td style="white-space:nowrap;"><span class="rb-link" onclick="rbCfgOpen('mr',${c})">Edit</span><span class="rb-link del" onclick="rbDelete(${c})">Delete</span></td></tr>` });
+    });
+  }
+  rows.sort((a, b) => a.cfg - b.cfg);
+  g('rb-cfg-body').innerHTML = rows.map(r => r.html).join('') || '<tr><td colspan="6" style="color:#9CA3AF;text-align:center;padding:18px;">No config for this filter. Use + Add Config.</td></tr>';
+  g('rb-flt-note').textContent = rbFlowF !== 'all' ? 'Pending approval configs are not tied to an ops flow, so they are hidden here.' : '';
 }
-function rbToggle(i) { RB_RULES[i].on = !RB_RULES[i].on; rbRenderRules(); rbPreview(); }
-function rbDelete(i) { RB_RULES.splice(i, 1); rbRenderRules(); rbPreview(); }
+function rbDelete(c) { RB_RULES = RB_RULES.filter(r => r.cfg !== c); rbRenderRules(); rbPreview(); rbToast('✓ Config deleted'); }
 function rbFilt(k) { rbFilter = rbFilter.includes(k) ? rbFilter.filter(x => x !== k) : rbFilter.concat(k); rbPreview(); }
-/* one click: a rule for every revolving (and, in Flow B, monthly) milestone of the flow that has none yet */
-function rbAddAll() {
-  const cat = rbCatalog(rbFlow), have = RB_RULES.filter(r => r.flow === rbFlow).map(r => r.ms);
-  const add = cat.rev.concat(cat.mon).filter(m => !have.includes(m.k));
-  let id = Math.max(0, ...RB_RULES.map(r => r.id));
-  add.forEach(m => RB_RULES.push(rb(++id, rbFlow, m.k, ['OPS'], '', [0], '', '', false, true)));
-  rbRenderRules(); rbPreview(); rbToast(add.length ? '✓ Added ' + add.length + ' rules for ' + RB_FLOWS.find(f => f.k === rbFlow).name + '. Set the owner of each.' : 'Every milestone of this flow already has a rule');
-}
+function rbPreviewOpen() { rbPreview(); document.getElementById('rb-prev-modal').classList.add('open'); }
 function rbModalHint() {
-  const v = document.getElementById('rb-f-ms').value, m = v ? rbMs(v) : null;
-  document.getElementById('rb-f-hint').textContent = m ? 'Runs during: ' + RB_SRC[m.src].win + (m.src === 'lc' ? '' : ' (from the funder\'s Life cycle dates)') : '';
+  const el = document.getElementById('rb-f-hint'), n = rbMsSel.length;
+  rbTagInfo();
+  if (!n) { el.textContent = 'Pick one or more. Several milestones share one config, with the same funders and reminders.'; return; }
+  const wins = [...new Set(rbMsSel.map(k => RB_SRC[rbMs(k).src].win))];
+  el.textContent = 'Runs during: ' + wins.join(', ') + ' (from the funder\'s Life cycle dates)' + (n > 1 ? '. These ' + n + ' milestones share this one config.' : '');
 }
-function rbOpen(i) {
-  rbEdit = (i === undefined) ? null : i;
-  const r = rbEdit === null ? { flow: rbFlow, ms: '', funders: [], owners: ['DE'], text: '', leads: [RB_LEADS.slice().sort(rbLeadSort).pop().id] } : RB_RULES[rbEdit];
-  const flow = r.flow, cat = rbCatalog(flow), fl = RB_FLOWS.find(f => f.k === flow);
-  const grp = (label, arr) => arr.length ? `<optgroup label="${label}">${arr.map(c => `<option value="${c.k}">${c.name}</option>`).join('')}</optgroup>` : '';
-  document.getElementById('rb-f-ms').innerHTML = '<option value="">Select a milestone</option>' + grp('ABS Plan · revolving (' + fl.name + ')', cat.rev) + grp('ABS Plan · monthly (Flow B only)', cat.mon) + grp('Drawdown schedule', cat.dd) + grp('Life cycle', cat.lc);
-  document.getElementById('rb-f-ms').value = r.ms;
-  const fsel = (r.funders && r.funders.length) ? r.funders : rbFundersOf(flow).map(f => f.k);
-  document.getElementById('rb-f-funders').innerHTML = rbFundersOf(flow).map(f => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-fund" value="${f.k}"${fsel.includes(f.k) ? ' checked' : ''}> ${f.name}</label>`).join('');
-  document.getElementById('rb-f-owners').innerHTML = ['DE', 'BE', 'OPS'].map(o => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-own" value="${o}"${r.owners.includes(o) ? ' checked' : ''}> ${rbOwnerLabel(o)}</label>`).join('');
-  document.getElementById('rb-f-text').value = r.text || '';
-  document.getElementById('rb-f-leads').innerHTML = RB_LEADS.slice().sort(rbLeadSort).map(l => rbLeadChk(l, r.leads.includes(l.id))).join('');
-  document.getElementById('rb-f-err').textContent = '';
-  document.getElementById('rb-modal-title').textContent = (rbEdit === null ? 'Add milestone rule' : 'Edit milestone rule') + ' · ' + fl.name;
-  rbModalHint(); document.getElementById('rb-modal').classList.add('open');
+let rbEdit = null, rbIsEdit = false;
+/* "Who is tagged" in the config modal: read-only for ops flow milestones (set in the PIC column), editable for Life cycle ones */
+function rbTagInfo() {
+  const el = document.getElementById('rb-f-owners'), grp = document.getElementById('rb-g-owners'); if (!el) return;
+  const free = rbMsSel.filter(k => !rbColOf(rbMsFlow, k));
+  grp.style.display = free.length ? '' : 'none';   // ops flow milestones take their PIC from the table, so nothing to show
+  el.innerHTML = free.length ? `<div style="font-size:12.5px;color:#374151;margin-bottom:5px;">${free.map(k => '<b>' + rbMs(k).name + '</b>').join(', ')} ${free.length > 1 ? 'are' : 'is'} not in an ops flow table, so enter who to tag here.</div><div class="pic-cell" id="pic-cfg-0">${picInner('cfg', 0)}</div>` : '';
 }
 const rbLeadChk = (l, on) => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-lead" value="${l.id}"${on ? ' checked' : ''}> ${rbLeadText(l)}</label>`;
+let rbMsSel = [], rbMsFlow = 'abs';
+function rbMsShow(on) { document.getElementById('rb-ms-dd').style.display = on ? 'block' : 'none'; document.getElementById('rb-ms-box').classList.toggle('open', on); if (on) rbMsRender(); }
+function rbMsRender() {
+  const q = document.getElementById('rb-ms-q').value.trim().toLowerCase(), cat = rbCatalog(rbMsFlow), fl = RB_FLOWS.find(f => f.k === rbMsFlow);
+  document.getElementById('rb-ms-chips').innerHTML = rbMsSel.map(k => `<span class="rb-pchip">${rbMs(k).name}<b onmousedown="rbMsToggle('${k}',event)">×</b></span>`).join('');
+  const grp = (label, arr) => { arr = arr.filter(c => !q || c.name.toLowerCase().includes(q)); return arr.length ? `<div class="rb-ms-grp">${label}</div>` + arr.map(c => `<div class="rb-ms-opt${rbMsSel.includes(c.k) ? ' on' : ''}" onmousedown="rbMsToggle('${c.k}',event)"><span>${c.name}</span>${rbMsSel.includes(c.k) ? '<span class="ck">✓</span>' : ''}</div>`).join('') : ''; };
+  document.getElementById('rb-ms-dd').innerHTML = (grp('ABS Plan · revolving (' + fl.name + ')', cat.rev) + grp('ABS Plan · monthly (Flow B only)', cat.mon) + grp('Life cycle', cat.dd.concat(cat.lc))) || '<div class="rb-ms-grp" style="padding:12px 14px;">No milestone matches</div>';
+}
+function rbMsToggle(k, e) {
+  e.preventDefault(); e.stopPropagation();
+  rbMsSel = rbMsSel.includes(k) ? rbMsSel.filter(x => x !== k) : rbMsSel.concat(k);
+  rbMsRender(); rbModalHint();
+  document.getElementById('rb-ms-q').focus();
+}
+document.addEventListener('mousedown', e => { if (!e.target.closest || !e.target.closest('.rb-ms-wrap')) { const dd = document.getElementById('rb-ms-dd'); if (dd && dd.style.display === 'block') rbMsShow(false); } });
+function rbFillMs(flow, ms) {
+  rbMsFlow = flow; rbMsSel = ms ? [].concat(ms) : [];
+  document.getElementById('rb-ms-q').value = ''; rbMsShow(false); rbMsRender(); rbModalHint();
+}
+function rbFillFunders(flow, sel) {
+  const fsel = (sel && sel.length) ? sel : rbFundersOf(flow).map(f => f.k);
+  document.getElementById('rb-f-funders').innerHTML = rbFundersOf(flow).map(f => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-fund" value="${f.k}"${fsel.includes(f.k) ? ' checked' : ''}> ${f.name}</label>`).join('');
+}
+function rbCfgFlow() { const flow = document.getElementById('rb-c-flow').value; rbFillMs(flow, ''); rbFillFunders(flow, []); }
+function rbCfgTE() {
+  const te = document.getElementById('rb-c-te').value;
+  ['pa', 'mr'].forEach(k => { document.getElementById('rb-sec-' + k).style.display = k === te ? '' : 'none'; });
+  document.getElementById('rb-f-err').textContent = '';
+}
+function rbCfgOpen(kind, i) {
+  const g = id => document.getElementById(id);
+  rbIsEdit = !!kind; rbEdit = (i === undefined) ? null : i;
+  const te = kind || 'mr';
+  g('rb-c-te').value = te; g('rb-c-te').disabled = rbIsEdit;
+  g('rb-c-id').value = rbIsEdit ? i : rbNextCfg();
+  g('rb-modal-title').textContent = rbIsEdit ? 'Edit Config' : 'Add Config';
+  const grp = (te === 'mr' && rbIsEdit) ? RB_RULES.filter(x => x.cfg === i) : [];
+  const r = grp.length ? grp[0] : { flow: rbFlowF !== 'all' ? rbFlowF : 'abs', ms: '', funders: [], pic: [], leads: [RB_LEADS.slice().sort(rbLeadSort).pop().id] };
+  g('rb-c-flow').innerHTML = RB_FLOWS.map(f => `<option value="${f.k}">${f.name}</option>`).join('');
+  g('rb-c-flow').value = r.flow; g('rb-c-flow').disabled = (te === 'mr' && rbIsEdit);
+  rbCfgPic = [...new Set([].concat(...grp.map(x => x.pic || [])))];
+  rbFillMs(r.flow, grp.length ? grp.map(x => x.ms) : r.ms); rbFillFunders(r.flow, r.funders);
+  g('rb-f-leads').innerHTML = RB_LEADS.slice().sort(rbLeadSort).map(l => rbLeadChk(l, r.leads.includes(l.id))).join('');
+  rbCfgTE();
+  g('rb-modal').classList.add('open');
+}
 function rbClose() { document.getElementById('rb-modal').classList.remove('open'); }
 function rbSave() {
-  const v = id => document.getElementById(id).value, flow = rbEdit === null ? rbFlow : RB_RULES[rbEdit].flow;
-  if (!v('rb-f-ms')) { document.getElementById('rb-f-err').textContent = 'Select a milestone.'; return; }
+  const g = id => document.getElementById(id), v = id => g(id).value, err = t => { g('rb-f-err').textContent = t; };
+  const te = v('rb-c-te');
+  if (te === 'pa') { rbClose(); rbToast('✓ Config saved (mock, same as today)'); return; }
+  const flow = v('rb-c-flow');
+  if (!rbMsSel.length) return err('Select at least one milestone.');
   const picked = [...document.querySelectorAll('.rb-f-fund:checked')].map(e => e.value);
-  if (!picked.length) { document.getElementById('rb-f-err').textContent = 'Tick at least one funder.'; return; }
-  const owners = [...document.querySelectorAll('.rb-f-own:checked')].map(e => e.value);
-  if (!owners.length) { document.getElementById('rb-f-err').textContent = 'Tick at least one role to notify.'; return; }
+  if (!picked.length) return err('Tick at least one funder.');
+  if (rbMsSel.some(k => !rbColOf(flow, k)) && !rbCfgPic.length) return err('Add at least one PIC email for the Life cycle milestone.');
   const leads = [...document.querySelectorAll('.rb-f-lead:checked')].map(e => parseInt(e.value, 10));
-  if (!leads.length) { document.getElementById('rb-f-err').textContent = 'Tick at least one reminder time.'; return; }
-  const dup = RB_RULES.some((r, i) => r.flow === flow && r.ms === v('rb-f-ms') && (r.text || '') === v('rb-f-text').trim() && i !== rbEdit);
-  if (dup) { document.getElementById('rb-f-err').textContent = 'This flow already has a rule for this milestone. Edit that one, or give this one a different reminder text.'; return; }
-  const rule = { id: rbEdit === null ? (Math.max(0, ...RB_RULES.map(r => r.id)) + 1) : RB_RULES[rbEdit].id, flow: flow, ms: v('rb-f-ms'), funders: picked.length === rbFundersOf(flow).length ? [] : picked, owners: owners, text: v('rb-f-text').trim(), leads: leads, on: rbEdit === null ? true : RB_RULES[rbEdit].on };
-  if (rbEdit === null) RB_RULES.push(rule); else RB_RULES[rbEdit] = rule;
-  rbClose(); rbRenderRules(); rbPreview(); rbToast('✓ Milestone rule saved');
+  if (!leads.length) return err('Tick at least one daily reminder.');
+  const sel = rbMsSel.slice();
+  const dups = sel.filter(k => RB_RULES.some(r => r.flow === flow && r.ms === k && r.cfg !== rbEdit));
+  if (dups.length) return err('This flow already has a config for: ' + dups.map(k => rbMs(k).name).join(', ') + '. Untick them, or edit those configs instead.');
+  const base = { flow: flow, funders: picked.length === rbFundersOf(flow).length ? [] : picked, leads: leads, on: true };
+  const cfg = rbEdit !== null ? rbEdit : rbNextCfg();
+  if (rbEdit !== null) RB_RULES = RB_RULES.filter(r => r.cfg !== rbEdit);
+  sel.forEach(k => RB_RULES.push(Object.assign({ id: Math.max(0, ...RB_RULES.map(r => r.id)) + 1, cfg: cfg, ms: k }, base, rbColOf(flow, k) ? {} : { pic: rbCfgPic.slice() })));
+  rbClose(); rbRenderRules(); rbPreview(); rbToast('✓ Milestone Reminder config saved');
 }
 /* the day a reminder is sent: `days` business days before the milestone (weekends skipped) */
 function rbSendDay(d, days) { let x = d; while (days > 0) { x--; const wd = (x - 16) % 7; if (wd < 5) days--; } return x; }
@@ -9722,27 +9807,23 @@ function rbPreview() {
   const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   document.getElementById('rb-fbar').innerHTML = '<span style="font-size:12px;color:#6B7280;margin-right:10px;">Funders</span>' + RB_FUNDERS.map(f => `<span class="rb-fbtn${rbFilter.includes(f.k) ? ' on' : ''}" onclick="rbFilt('${f.k}')"><span class="rb-fdot" style="background:${f.c};"></span>${f.name}<span style="color:#9CA3AF;font-weight:400;">· ${rbFlowLetter(f.flow)}</span></span>`).join('');
   const dg = RB_DIGEST;
-  const inDigest = x => dg.flows.includes(x.fn.flow) && dg.sources.includes(x.m.src);
-  const dayEvs = d => [].concat(...RB_EVENTS.filter(e => e.d === d).map(rbEventsFor)).filter((x, i, a) => a.findIndex(y => y.e === x.e && y.r === x.r) === i).filter(inDigest).sort((a, b) => RB_FUNDERS.findIndex(f => f.k === a.fn.k) - RB_FUNDERS.findIndex(f => f.k === b.fn.k));   // one entry per rule, only what the digest includes, grouped by funder
-  const dayName = { Mon: 'Monday', Tue: 'Tuesday', Fri: 'Friday' }[dg.day];
-  document.getElementById('rb-dg-line').innerHTML = dg.on ? `<b>Weekly digest</b> · sent on SeaTalk every ${dayName} at ${dg.time} SGT · covers ${dg.cov === 'week' ? 'that week, Mon to Sun' : 'the next 7 days'}` : '<b>Weekly digest is off.</b> Turn it on above to send it.';
+  /* the digest lists every milestone of the week for the ticked funders, whether or not a reminder config exists */
+  const dayEvs = d => RB_EVENTS.filter(e => e.d === d && rbFilter.includes(e.f)).map(e => { const m = rbMs(e.ms); return { e: e, m: m, fn: rbFunder(e.f), special: !!e.initial || m.src === 'dd' }; }).sort((a, b) => RB_FUNDERS.findIndex(f => f.k === a.fn.k) - RB_FUNDERS.findIndex(f => f.k === b.fn.k));
+  document.getElementById('rb-dg-line').innerHTML = `<b>Weekly digest</b> · fixed, no config needed · sent on SeaTalk every Monday at ${dg.time} SGT · lists all milestones of that week, Mon to Sun`;
   // the weekly digest is a plain text message (SeaTalk), grouped by day
-  const dl = ['[Weekly milestone digest · TH] ' + (dg.cov === 'week' ? 'Mon 16 to Sun 22 Nov 2026' : 'Next 7 days, 16 to 22 Nov 2026')];
+  const dl = ['[Weekly milestone digest · TH] Mon 16 to Sun 22 Nov 2026'];
   let anyInitial = false, any = false;
   RB_WEEK.forEach((d, i) => {
     const evs = dayEvs(d); if (!evs.length) return;
     any = true; dl.push('', names[i] + ' ' + d + ' Nov');
-    evs.forEach(x => { if (x.special) anyInitial = true; dl.push((x.special ? '* ' : '- ') + x.fn.name + ': ' + rbLabel(x) + ' · ' + rbTags(x.r)); });
+    evs.forEach(x => { if (x.special) anyInitial = true; dl.push((x.special ? '* ' : '- ') + x.fn.name + ': ' + x.m.name); });
   });
   if (any && anyInitial) dl.push('', '* initial milestone of a new funder or drawdown (earlier SLA)');
-  const dm = document.getElementById('rb-dgmsg');
-  dm.style.opacity = dg.on ? '' : '0.4';
-  dm.textContent = !dg.on ? 'The weekly digest is off.' : any ? dl.join('\n') : 'Nothing to send for this selection.';
+  document.getElementById('rb-dgmsg').textContent = any ? dl.join('\n') : 'Nothing to send for this selection.';
   // calendar preview for the portal (the message above is what SeaTalk receives)
   const cal = document.getElementById('rb-cal');
-  cal.style.opacity = dg.on ? '' : '0.4';
   cal.innerHTML = RB_WEEK.map((d, i) => `<div class="rb-cal-hd">${names[i]}</div>`).join('') + RB_WEEK.map((d, i) =>
-    `<div class="rb-cal-day${i > 4 ? ' we' : ''}${rbSel === d ? ' sel' : ''}" onclick="rbSel=${d};rbPreview()"><div class="dn">${d} Nov</div>${dayEvs(d).map(x => `<div class="rb-ev${x.special ? ' sp' : ''}"><span class="rb-fn" style="background:${x.fn.bg};color:${x.fn.c};">${x.fn.name}</span><br>${x.special ? '* ' : ''}${rbLabel(x)}<small>${rbTags(x.r)}</small></div>`).join('')}</div>`).join('');
+    `<div class="rb-cal-day${i > 4 ? ' we' : ''}${rbSel === d ? ' sel' : ''}" onclick="rbSel=${d};rbPreview()"><div class="dn">${d} Nov</div>${dayEvs(d).map(x => `<div class="rb-ev${x.special ? ' sp' : ''}"><span class="rb-fn" style="background:${x.fn.bg};color:${x.fn.c};">${x.fn.name}</span><br>${x.special ? '* ' : ''}${x.m.name}</div>`).join('')}</div>`).join('');
   // the reminder message sent on the selected day: every milestone whose reminder lands on that day
   const due = [].concat(...RB_EVENTS.map(rbEventsFor)).filter(x => x.send === rbSel).sort((a, b) => a.fn.name.localeCompare(b.fn.name));
   const dn = names[RB_WEEK.indexOf(rbSel)];
@@ -9750,31 +9831,15 @@ function rbPreview() {
   if (!due.length) { document.getElementById('rb-msg').textContent = 'No reminder is sent on this day.'; return; }
   const line = x => {
     const when = x.e.d === rbSel ? 'today' : (names[RB_WEEK.indexOf(x.e.d)] + ' ' + x.e.d + ' Nov');
-    return (x.special ? '* ' : '- ') + x.fn.name + ': ' + rbLabel(x) + ', due ' + when + ' · ' + rbTags(x.r);
+    return (x.special ? '* ' : '- ') + x.fn.name + ': ' + x.m.name + ', due ' + when + ' · ' + rbTags(x.r);
   };
   // one message per reminder time of that day
   const times = [...new Set(due.map(x => x.lead.time))].sort();
   document.getElementById('rb-msg').textContent = times.map(t => '[Milestone reminder · TH] ' + dn + ' ' + rbSel + ' Nov, ' + t + ' SGT\n' + due.filter(x => x.lead.time === t).map(line).join('\n')).join('\n\n');
 }
 /* ── Rules Library: Milestone Lead Time Rules ── */
-const RB_EMAIL = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
-function rbRenderPic(focusRole) {
-  ['DE', 'BE', 'OPS'].forEach(role => {
-    document.getElementById('rb-pic-' + role).innerHTML = `<div class="rb-picbox">${RB_PIC[role].map((e, i) => `<span class="rb-pchip">${e}<b onclick="rbPicDel('${role}',${i})">×</b></span>`).join('')}<input class="rb-picin" id="rb-picin-${role}" placeholder="${RB_PIC[role].length ? 'Add another email' : 'name@company.com'}, press Enter" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();rbPicAdd('${role}',this,true);}" onblur="rbPicAdd('${role}',this,false)" /></div><div class="rb-picerr" id="rb-picerr-${role}"></div>`;
-  });
-  if (focusRole) document.getElementById('rb-picin-' + focusRole).focus();
-}
-function rbPicAdd(role, el, refocus) {
-  const parts = el.value.split(/[\s,;]+/).filter(Boolean); if (!parts.length) return;
-  const bad = parts.filter(x => !RB_EMAIL.test(x)), good = parts.filter(x => RB_EMAIL.test(x) && !RB_PIC[role].includes(x));
-  RB_PIC[role] = RB_PIC[role].concat(good);
-  rbRenderPic(bad.length ? null : (refocus ? role : null));
-  if (bad.length) { const e = document.getElementById('rb-picerr-' + role); e.textContent = bad.join(', ') + (bad.length > 1 ? ' are not valid email addresses' : ' is not a valid email address'); const inp = document.getElementById('rb-picin-' + role); inp.value = bad.join(' '); inp.focus(); }
-  rbPreview();
-}
-function rbPicDel(role, i) { RB_PIC[role].splice(i, 1); rbRenderPic(); rbPreview(); }
 let rbLibEdit = null;
-function rbLibUsed(id) { return RB_RULES.filter(r => r.leads.includes(id)).length; }
+function rbLibUsed(id) { return new Set(RB_RULES.filter(r => r.leads.includes(id)).map(r => r.cfg)).size; }
 function rbRenderLib() {
   document.getElementById('rb-lead-body').innerHTML = RB_LEADS.slice().sort(rbLeadSort).map(l => {
     const u = rbLibUsed(l.id);
@@ -9812,7 +9877,7 @@ function rbLibDelete(id) {
   if (u) { rbToast('Used by ' + u + ' milestone rule' + (u > 1 ? 's' : '') + '. Remove it from those rules first.'); return; }
   RB_LEADS = RB_LEADS.filter(l => l.id !== id); rbRenderLib();
 }
-rbRenderDigest(); rbRenderPic(); rbRenderLib(); rbRenderRules(); rbPreview();
+rbRenderLib(); rbRenderRules(); rbPreview();
 if (location.hash === '#reminder') switchFlow('reminder');   // deep link: ...mockup.html#reminder
 </script>
 
