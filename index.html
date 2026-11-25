@@ -8885,6 +8885,10 @@ function ifPick(v, list, syn) {                       // '' = blank, null = not 
   if (syn && syn[k]) return syn[k];
   return list.find(x => ifNorm(x) === k) || null;
 }
+/* the form takes numbers: 1, 2, 3 = the name at that place in the list. Names and the old codes are still accepted. */
+function ifN(v, names) { const t = String(v == null ? '' : v).trim(); return /^\d+$/.test(t) && names[+t - 1] !== undefined ? names[+t - 1] : v; }
+function ifTen(x) { const t = String(x == null ? '' : x).trim(); return /^\d+$/.test(t) ? (+t === 0 ? 'DEFAULT' : t + 'M') : t.toUpperCase(); }   // tenor in months, 0 = Default
+function ifFrom(x) { const t = String(x == null ? '' : x).trim(); return /^\d$/.test(t) ? (t === '0' ? 'T' : 'M' + t) : t; }   // offset from: 0 = T, 1 to 9 = M1 to M9
 function ifSplit(v) { return String(v || '').split(/[,;|\n]|\s&\s/).map(s => s.trim()).filter(Boolean); }
 function ifLists() {
   const opts = id => [...document.querySelectorAll('#' + id + ' option')].map(o => o.textContent.trim()).filter(t => t && !/^select/i.test(t));
@@ -8897,7 +8901,7 @@ function ifLists() {
     trafficDim: ['Target OS', 'Loan Count'], currency: ['Mil USD', 'Mil MYR', 'Mil THB'],
     dayType: ['Business Days (T)', 'Calendar Days (D)'],
     milestoneFrom: ['T (Cycle Start)', 'M1 Weekly Collection Start Date', 'M2 Weekly Collection End Date', 'M3 Weekly Collection Report Generation Date', 'M4 Weekly Batch Creation Date', 'M5 Weekly Collection Report Date', 'M6 Weekly Cutoff Date', 'M7 Weekly Sale Notice Date', 'M8 Weekly Sale Date', 'M9 Weekly Collection Deposit Date'],
-    opsFlow: { thabsnonnet: 'abs', thabsnet: 'abs-net', thabl: 'abl', myabsgross: 'my' },
+    opsFlow: { thabsnonnet: 'abs', thabsnet: 'abs-net', thabl: 'abl', myabsgross: 'my', '1': 'abs', '2': 'abs-net', '3': 'abl', '4': 'my' },
     opsRegion: { abs: 'TH', 'abs-net': 'TH', abl: 'TH', my: 'MY' }
   };
 }
@@ -8970,24 +8974,24 @@ function ifCheck(tabs) {
     const g = l => { const kv = ifKV(b, l); need(T1, kv, l); return kv; };
     const region = g('Region'), name = g('Funder Name'), scheme = g('Funder Scheme'), product = g('Product'), loan = g('Loan Type (MY only)'),
       orig = g('Originator'), inv = g('Investor'), lic = g('License (TH only)'), ten = g('Supported Tenors'), spv = g('SPV Name'), tr = g('Tranche');
-    const reg = ifPick(region.v, ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
-    if (reg === null) add(T1, region.ref, 'error', '"' + region.v + '" is not a region. Use MY or TH.'); else if (!reg && region.found) add(T1, region.ref, 'warn', 'Region is empty. It is needed to build the funder name.');
+    const reg = ifPick(ifN(region.v, ['TH', 'MY']), ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
+    if (reg === null) add(T1, region.ref, 'error', '"' + region.v + '" is not a region. Use 1 (TH) or 2 (MY).'); else if (!reg && region.found) add(T1, region.ref, 'warn', 'Region is empty. It is needed to build the funder name.');
     draft.region = reg || '';
-    const pick = (kv, list, label, syn) => { const v = ifPick(kv.v, list, syn); if (v === null) add(T1, kv.ref, 'error', '"' + kv.v + '" is not a valid ' + label + '. Use ' + list.join(' | ') + '.'); else if (!v && kv.found) add(T1, kv.ref, 'warn', label + ' is empty (compulsory before Mark Ready).'); return v || ''; };
-    draft.scheme = pick(scheme, L.scheme, 'Funder Scheme');
-    draft.product = pick(product, L.product, 'Product');
-    draft.originator = pick(orig, L.originator, 'Originator', { seamoney: 'Monee' });
+    const pick = (kv, list, label, syn, names) => { const v = ifPick(names ? ifN(kv.v, names) : kv.v, list, syn); if (v === null) add(T1, kv.ref, 'error', '"' + kv.v + '" is not a valid ' + label + '. Use ' + (names ? names.map((x, i) => (i + 1) + ' = ' + x).join(', ') : list.join(' | ')) + '.'); else if (!v && kv.found) add(T1, kv.ref, 'warn', label + ' is empty (compulsory before Mark Ready).'); return v || ''; };
+    draft.scheme = pick(scheme, L.scheme, 'Funder Scheme', null, ['ABS', 'ABL']);
+    draft.product = pick(product, L.product, 'Product', null, ['BCL', 'SPL', 'SCL', 'Term Loan']);
+    draft.originator = pick(orig, L.originator, 'Originator', { seamoney: 'Monee' }, ['Seamoney', 'Unicorn']);
     draft.investor = inv.v; if (!inv.v && inv.found) add(T1, inv.ref, 'warn', 'Investor is empty (compulsory before Mark Ready).');
     const lts = ifSplit(loan.v), lcodes = [];
-    lts.forEach(x => { const v = ifPick(x, L.loanType); if (v === null) add(T1, loan.ref, 'error', '"' + x + '" is not a loan type. Use ' + L.loanType.join(' | ') + '.'); else lcodes.push(v); });
+    lts.forEach(x => { const v = ifPick(ifN(x, ['SFinancing-i', 'SLoan']), L.loanType); if (v === null) add(T1, loan.ref, 'error', '"' + x + '" is not a loan type. Use 1 = SFinancing-i, 2 = SLoan.'); else lcodes.push(v); });
     draft.loanTypes = lcodes;
     if (reg === 'TH' && lts.length) add(T1, loan.ref, 'warn', 'Loan Type is MY only, so it is ignored for a TH funder.');
     if (reg === 'MY' && !lts.length) add(T1, loan.ref, 'warn', 'Loan Type is compulsory for a MY funder.');
-    draft.license = pick(lic, L.license, 'License'); 
+    draft.license = pick(lic, L.license, 'License', null, ['CCC', 'DGL', 'Nano']);
     if (reg === 'MY' && lic.v) { add(T1, lic.ref, 'warn', 'License is TH only, so it is ignored for a MY funder.'); draft.license = ''; }
     if (reg === 'TH' && !lic.v) add(T1, lic.ref, 'warn', 'License is compulsory for a TH funder.');
-    const tl = ifSplit(ten.v).map(x => x.toUpperCase()), tok = [];
-    tl.forEach(x => { if (L.tenors.includes(x)) tok.push(x); else add(T1, ten.ref, 'error', '"' + x + '" is not a supported tenor. Use ' + L.tenors.join(' | ') + '.'); });
+    const tl = ifSplit(ten.v).map(x => /^\d+$/.test(x) ? x + 'M' : x.toUpperCase()), tok = [];
+    tl.forEach(x => { if (L.tenors.includes(x)) tok.push(x); else add(T1, ten.ref, 'error', '"' + x + '" is not a supported tenor. Type it in months: ' + L.tenors.map(t => parseInt(t, 10)).join(', ') + '.'); });
     if (!tl.length && ten.found) add(T1, ten.ref, 'warn', 'Supported Tenors is empty (compulsory before Mark Ready).');
     draft.tenors = tok;
     draft.spv = spv.v; draft.tranche = tr.v ? (/^\d+$/.test(tr.v) ? tr.v.padStart(2, '0') : tr.v) : '';
@@ -9016,25 +9020,25 @@ function ifCheck(tabs) {
   else {
     const g = l => { const kv = ifKV(pt, l); need(T2, kv, l); return kv; };
     const pr = g('Pricing Mode'), mc = g('Manual Clawback Mode'), ac = g('Auto Clawback Enabled'), am = g('Auto Clawback Mode'), nn = g('N Input (Mode 2 only)');
-    const pv = ifPick(pr.v, L.pricing);
-    if (pv === null) add(T2, pr.ref, 'error', '"' + pr.v + '" is not a pricing mode. Use Accrued Interest | Cashflow Based.'); else if (!pv && pr.found) add(T2, pr.ref, 'warn', 'Pricing Mode is empty (compulsory before Mark Ready).');
+    const pv = ifPick(pr.v, L.pricing, { '1': 'Accrued Interest', '2': 'Cashflow Based', accrued: 'Accrued Interest', cashflow: 'Cashflow Based' });   // 1 | 2, or the name
+    if (pv === null) add(T2, pr.ref, 'error', '"' + pr.v + '" is not a pricing mode. Use 1 (Accrued Interest) | 2 (Cashflow Based).'); else if (!pv && pr.found) add(T2, pr.ref, 'warn', 'Pricing Mode is empty (compulsory before Mark Ready).');
     draft.pricing = pv || '';
-    ifSplit(mc.v).forEach(x => { if (!/mode\s*[abc]/i.test(x)) add(T2, mc.ref, 'error', '"' + x + '" is not a manual clawback mode. Use Mode A | Mode B | Mode C.'); });
-    const acv = ifPick(ac.v, ['Yes', 'No']);
-    if (acv === null) add(T2, ac.ref, 'error', '"' + ac.v + '" is not Yes or No.'); else if (!acv && ac.found) add(T2, ac.ref, 'warn', 'Auto Clawback Enabled is empty (compulsory before Mark Ready).');
+    ifSplit(mc.v).forEach(x => { if (!/^([1-3]|(mode\s*)?[abc])$/i.test(x.trim())) add(T2, mc.ref, 'error', '"' + x + '" is not a manual clawback mode. Use 1 (Mode A) | 2 (Mode B) | 3 (Mode C).'); });
+    const acv = ifPick(ifN(ac.v, ['Yes', 'No']), ['Yes', 'No']);
+    if (acv === null) add(T2, ac.ref, 'error', '"' + ac.v + '" is not 1 (Yes) or 2 (No).'); else if (!acv && ac.found) add(T2, ac.ref, 'warn', 'Auto Clawback Enabled is empty (compulsory before Mark Ready).');
     if (acv === 'Yes') {
-      const mm = /mode\s*([12])/i.exec(am.v);
+      const mm = /^(?:mode\s*)?([12])\b/i.exec(String(am.v).trim());
       if (!am.v) add(T2, am.ref, 'warn', 'Auto Clawback Mode is needed when Auto Clawback is Yes.');
-      else if (!mm) add(T2, am.ref, 'error', '"' + am.v + '" is not an auto clawback mode. Use Mode 1 | Mode 2.');
+      else if (!mm) add(T2, am.ref, 'error', '"' + am.v + '" is not an auto clawback mode. Use 1 | 2.');
       if (mm && mm[1] === '2' && nn.v && !(+nn.v > 0)) add(T2, nn.ref, 'error', 'N must be a number above 0 (default 1).');
     }
     // fee config
     const fees = ifTable(pt, '#', 'Fee Type', /^[C-E]\.\s/) || [], seen = {}; let nf = 0;
     fees.forEach(({ r, n }) => {
       if (!filled(r)) return; nf++;
-      const ft = col(r, 1), tn = col(r, 2), gp = col(r, 3), val = col(r, 4), eff = col(r, 5);
-      if (!L.feeType.some(x => ifNorm(x) === ifNorm(ft))) add(T2, 'B' + n, 'error', 'Fee Type "' + ft + '" is not valid. Use ' + L.feeType.join(' | ') + '.');
-      const tk = tn.toUpperCase();
+      const ft = ifN(col(r, 1), ['Daily', 'Monthly', 'Yearly']), tn = col(r, 2), gp = col(r, 3), val = col(r, 4), eff = col(r, 5);
+      if (!L.feeType.some(x => ifNorm(x) === ifNorm(ft)) && !['daily', 'monthly', 'yearly'].includes(ifNorm(ft))) add(T2, 'B' + n, 'error', 'Fee Type "' + ft + '" is not valid. Use 1 = Daily, 2 = Monthly, 3 = Yearly.');
+      const tk = ifTen(tn);
       if (tk !== 'DEFAULT' && !L.tenors.includes(tk)) add(T2, 'C' + n, 'error', 'Tenor "' + tn + '" is not valid.');
       else if (tk !== 'DEFAULT' && draft.tenors && draft.tenors.length && !draft.tenors.includes(tk)) add(T2, 'C' + n, 'error', 'Tenor ' + tn + ' is not in Supported Tenors (' + draft.tenors.join(', ') + ').');
       if (!(val !== '' && !isNaN(parseFloat(val.replace('%', ''))))) add(T2, 'E' + n, 'error', 'Value "' + val + '" is not a number.');
@@ -9052,15 +9056,15 @@ function ifCheck(tabs) {
       else if (!m.matched.length) add(T2, 'C' + n, 'error', 'No library rule "' + ds.replace(/\s+x+$/i, '') + '" has the value "' + col(r, 2) + '". Ask dev to add it.');
       else if (m.matched.length > 1) { add(T2, 'B' + n, 'warn', '"' + ds + '" matches several library rules (' + m.matched.map(x => x.id).join(', ') + '). Pick one in the draft.'); }
       else draft.ruleIds.push(m.matched[0].id);
-      const st = col(r, 3); if (st && !/^(enable|disable)$/i.test(st)) add(T2, 'D' + n, 'error', 'Status "' + st + '" must be Enable or Disable.');
+      const st = col(r, 3); if (st && !/^(enable|disable|1|2)$/i.test(st)) add(T2, 'D' + n, 'error', 'Status "' + st + '" must be 1 (Enable) or 2 (Disable).');
     });
     counts.rules = nr;
     // traffic control
     const tcs = ifTable(pt, 'Rule ID', 'Traffic Description', /^E\.\s/) || [], tseen = {}; let nt = 0;
     tcs.forEach(({ r, n }) => {
-      const dm = col(r, 2); if (!dm) return; nt++;
-      if (!L.trafficDim.some(x => ifNorm(x) === ifNorm(dm))) add(T2, 'C' + n, 'error', 'Dimension "' + dm + '" is not valid. Use ' + L.trafficDim.join(' | ') + '.');
-      const tn = col(r, 3).toUpperCase();
+      const dm = ifN(col(r, 2), ['Target OS', 'Loan Count']); if (!dm) return; nt++;
+      if (!L.trafficDim.some(x => ifNorm(x) === ifNorm(dm))) add(T2, 'C' + n, 'error', 'Dimension "' + dm + '" is not valid. Use 1 = Target OS, 2 = Loan Count.');
+      const tn = ifTen(col(r, 3));
       if (tn && tn !== 'DEFAULT' && !L.tenors.includes(tn)) add(T2, 'D' + n, 'error', 'Tenor "' + col(r, 3) + '" is not valid.');
       else if (tn && tn !== 'DEFAULT' && draft.tenors && draft.tenors.length && !draft.tenors.includes(tn)) add(T2, 'D' + n, 'error', 'Tenor ' + col(r, 3) + ' is not in Supported Tenors (' + draft.tenors.join(', ') + ').');
       const key = ifNorm(dm) + '|' + tn; if (tseen[key]) add(T2, 'C' + n, 'error', 'Duplicate of row ' + tseen[key] + ' (same dimension and tenor).'); else tseen[key] = n;
@@ -9072,7 +9076,7 @@ function ifCheck(tabs) {
     const pn = num(pool, 'Issued Pool Size'), sn = num(sen, 'Senior Tranche Size');
     if (pn !== null && pn <= 0) add(T2, pool.ref, 'error', 'Issued Pool Size must be above 0.');
     if (pn !== null && sn !== null && sn > pn) add(T2, sen.ref, 'error', 'Senior Tranche Size (' + sn + ') is more than the Issued Pool Size (' + pn + ').');
-    const cu = ifPick(cur.v, L.currency); if (cu === null) add(T2, cur.ref, 'error', '"' + cur.v + '" is not a currency. Use ' + L.currency.join(' | ') + '.'); else if (!cu && cur.found) add(T2, cur.ref, 'warn', 'Currency is empty (compulsory before Mark Ready).');
+    const cu = ifPick(cur.v, L.currency, { '1': 'Mil USD', '2': 'Mil MYR', '3': 'Mil THB', usd: 'Mil USD', myr: 'Mil MYR', thb: 'Mil THB' }); if (cu === null) add(T2, cur.ref, 'error', '"' + cur.v + '" is not a currency. Use 1 = Mil USD, 2 = Mil MYR, 3 = Mil THB.'); else if (!cu && cur.found) add(T2, cur.ref, 'warn', 'Currency is empty (compulsory before Mark Ready).');
     draft.pool = pn; draft.senior = sn; draft.currency = cu || '';
   }
 
@@ -9129,10 +9133,10 @@ function ifCheck(tabs) {
     const g = l => { const kv = ifKV(pl, l); need(T3, kv, l); return kv; };
     const tn = g('Template Name'), of = g('Ops Flow'), rg = g('Region'), rs = g('Revolving Start Date'), dt = g('Offset Day Type');
     const ofk = of.v ? ifPick(of.v, [], L.opsFlow) : '';
-    if (of.v && !ofk) add(T3, of.ref, 'error', '"' + of.v + '" is not an ops flow. Use TH ABS Non Net | TH ABS Net | TH ABL | MY ABS Gross.'); else if (!of.v && of.found) add(T3, of.ref, 'warn', 'Ops Flow is empty (compulsory before Mark Ready).');
+    if (of.v && !ofk) add(T3, of.ref, 'error', '"' + of.v + '" is not an ops flow. Use 1 = TH ABS Non Net, 2 = TH ABS Net, 3 = TH ABL, 4 = MY ABS Gross.'); else if (!of.v && of.found) add(T3, of.ref, 'warn', 'Ops Flow is empty (compulsory before Mark Ready).');
     draft.opsFlow = ofk || '';
-    const rg3 = ifPick(rg.v, ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
-    if (rg3 === null) add(T3, rg.ref, 'error', '"' + rg.v + '" is not a region. Use Thailand (TH) | Malaysia (MY).');
+    const rg3 = ifPick(ifN(rg.v, ['TH', 'MY']), ['TH', 'MY'], { thailandth: 'TH', malaysiamy: 'MY' });
+    if (rg3 === null) add(T3, rg.ref, 'error', '"' + rg.v + '" is not a region. Use 1 (TH) | 2 (MY).');
     if (rg3 && draft.region && rg3 !== draft.region) add(T3, rg.ref, 'error', 'Region here is ' + rg3 + ' but Basic Info says ' + draft.region + '.');
     if (ofk && draft.region && L.opsRegion[ofk] !== draft.region) add(T3, of.ref, 'error', 'Ops Flow "' + of.v + '" is a ' + L.opsRegion[ofk] + ' flow but the funder region is ' + draft.region + '.');
     if (tn.v) {
@@ -9140,29 +9144,52 @@ function ifCheck(tabs) {
       if (!names.some(x => ifNorm(x) === ifNorm(tn.v))) add(T3, tn.ref, 'warn', 'No Workflow Template named "' + tn.v + '" exists. Pick one in Module 3, or create it first under Workflow Template.');
     }
     if (rs.v) { if (!/^\d{4}-\d{2}-\d{2}$/.test(rs.v) || isNaN(Date.parse(rs.v))) add(T3, rs.ref, 'error', 'Revolving Start Date "' + rs.v + '" must be a date like 2026-11-01.'); else draft.revolvingStart = rs.v; }
-    if (dt.v && ifPick(dt.v, L.dayType, { calendardayst: 'Calendar Days (D)' }) === null) add(T3, dt.ref, 'error', '"' + dt.v + '" is not a day type. Use Business Days (T) | Calendar Days (D).');
-    // cycle segments must run 1..EOM with no gap or overlap
-    const segs = ifTable(pl, 'Cycle #', 'Start Day', /^C\.\s|^Type$/) || [], sg = [];
-    segs.forEach(({ r, n }) => { if (col(r, 1) === '' && col(r, 2) === '') return; sg.push({ n, s: +col(r, 1), e: /^eom$/i.test(col(r, 2)) ? 31 : +col(r, 2), eom: /^eom$/i.test(col(r, 2)) }); });
-    sg.forEach((x, i) => {
-      if (isNaN(x.s) || isNaN(x.e)) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' needs a numeric Start Day and an End Day (or EOM).');
-      else if (x.e < x.s) add(T3, 'C' + x.n, 'error', 'Cycle ' + (i + 1) + ' ends before it starts.');
-      else if (i === 0 && x.s !== 1) add(T3, 'B' + x.n, 'error', 'The first cycle must start on day 1.');
-      else if (i > 0 && !isNaN(sg[i - 1].e) && x.s !== sg[i - 1].e + 1) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' starts on day ' + x.s + ' but the previous cycle ends on day ' + (sg[i - 1].eom ? 'EOM' : sg[i - 1].e) + '. Cycles must be continuous.');
-    });
-    if (sg.length && !sg[sg.length - 1].eom) add(T3, 'C' + sg[sg.length - 1].n, 'error', 'The last cycle must end on EOM.');
+    if (dt.v && ifPick(dt.v, L.dayType, { '1': 'Business Days (T)', '2': 'Calendar Days (D)', t: 'Business Days (T)', d: 'Calendar Days (D)', calendardayst: 'Calendar Days (D)' }) === null) add(T3, dt.ref, 'error', '"' + dt.v + '" is not a day type. Use 1 (Business Days) | 2 (Calendar Days).');
+    // cycle setting: one cell "Cycle End Days" (5,15,25,EOM). An older form with the Start Day / End Day table is still read.
+    const ced = ifKV(pl, 'Cycle End Days'); let sg = [];
+    if (ced.found) {
+      const ends = ifSplit(ced.v); let prev = 0;
+      if (!ends.length) add(T3, ced.ref, 'warn', 'Cycle End Days is empty (compulsory before Mark Ready).');
+      ends.forEach((x, i) => {
+        const eom = /^eom$/i.test(x), e = eom ? 31 : +x;
+        if (!eom && !(Number.isInteger(e) && e >= 1 && e <= 30)) add(T3, ced.ref, 'error', 'Cycle ' + (i + 1) + ' end "' + x + '" must be a day from 1 to 30, or EOM.');
+        else if (e <= prev) add(T3, ced.ref, 'error', 'Cycle ' + (i + 1) + ' ends on day ' + x + ' but the previous cycle ends on day ' + prev + '. The end days must go up.');
+        else if (eom && i < ends.length - 1) add(T3, ced.ref, 'error', 'EOM must be the last cycle end.');
+        sg.push({ n: ced.ref, s: prev + 1, e: e, eom: eom }); if (!isNaN(e)) prev = e;
+      });
+      if (ends.length && !/^eom$/i.test(ends[ends.length - 1])) add(T3, ced.ref, 'error', 'The last cycle must end on EOM.');
+    } else {
+      const segs = ifTable(pl, 'Cycle #', 'Start Day', /^C\.\s|^Type$/) || [];
+      segs.forEach(({ r, n }) => { if (col(r, 1) === '' && col(r, 2) === '') return; sg.push({ n, s: +col(r, 1), e: /^eom$/i.test(col(r, 2)) ? 31 : +col(r, 2), eom: /^eom$/i.test(col(r, 2)) }); });
+      sg.forEach((x, i) => {
+        if (isNaN(x.s) || isNaN(x.e)) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' needs a numeric Start Day and an End Day (or EOM).');
+        else if (x.e < x.s) add(T3, 'C' + x.n, 'error', 'Cycle ' + (i + 1) + ' ends before it starts.');
+        else if (i === 0 && x.s !== 1) add(T3, 'B' + x.n, 'error', 'The first cycle must start on day 1.');
+        else if (i > 0 && !isNaN(sg[i - 1].e) && x.s !== sg[i - 1].e + 1) add(T3, 'B' + x.n, 'error', 'Cycle ' + (i + 1) + ' starts on day ' + x.s + ' but the previous cycle ends on day ' + (sg[i - 1].eom ? 'EOM' : sg[i - 1].e) + '. Cycles must be continuous.');
+      });
+      if (sg.length && !sg[sg.length - 1].eom) add(T3, 'C' + sg[sg.length - 1].n, 'error', 'The last cycle must end on EOM.');
+    }
     counts.segments = sg.length;
-    // milestones
-    const ms = ifTable(pl, '#', 'Milestone', /^Legend/) || []; let nm = 0, blank = 0;
+    // holidays skipped by every milestone: 1 = TH, 2 = MY, 3 = SG, 4 = HK, 5 = US, 6 = UK
+    const shk = ifKV(pl, 'Skip Holidays of'), HOLS = ['TH', 'MY', 'SG', 'HK', 'US', 'UK'];
+    if (shk.found && shk.v) { draft.skipHolidays = []; ifSplit(shk.v).forEach(x => { const h = ifN(x, HOLS); if (HOLS.includes(String(h).toUpperCase())) draft.skipHolidays.push(String(h).toUpperCase()); else add(T3, shk.ref, 'error', '"' + x + '" is not a holiday region. Use 1 = TH, 2 = MY, 3 = SG, 4 = HK, 5 = US, 6 = UK.'); }); }
+    // milestones: the ops flow brings its own, so only the changes are typed (Offset from / Offset (days)); columns are found by header
+    const ms = ifTable(pl, '#', 'Milestone', /^Legend/) || []; let nm = 0;
+    const mh = pl.find(r => r && ifNorm(r[0]) === ifNorm('#') && ifNorm(r[1]) === ifNorm('Milestone')) || [];
+    let cFrom = mh.findIndex(h => ifNorm(h) === ifNorm('Offset from')), cOff = mh.findIndex(h => ifNorm(h) === ifNorm('Offset (days)')); if (cFrom < 0) cFrom = 3; if (cOff < 0) cOff = 4;
+    const flowDef = OPS_FLOW_MILESTONES[draft.opsFlow] || null; draft.msOverrides = [];
     ms.forEach(({ r, n }) => {
       if (!col(r, 0)) return;
-      const nm_ = col(r, 1), from = col(r, 3), off = col(r, 4);
-      if (!nm_ && !off) { blank++; return; } nm++;
-      if (from && !L.milestoneFrom.some(x => ifNorm(x) === ifNorm(from))) add(T3, 'D' + n, 'error', 'Offset from "' + from + '" is not a valid milestone.');
-      if (off !== '' && !/^\d+$/.test(off)) add(T3, 'E' + n, 'error', 'Offset (days) "' + off + '" must be a whole number.');
-      if (!nm_) add(T3, 'B' + n, 'warn', 'Milestone ' + col(r, 0) + ' has an offset but no name.');
+      const num = +col(r, 0), fromRaw = col(r, cFrom), off = col(r, cOff);
+      if (!fromRaw && off === '') return; nm++;
+      const t = String(fromRaw).trim(), okFrom = /^\d+$/.test(t) ? (+t === 0 || +t === 99 || (+t >= 1 && +t <= 13)) : (/^(t|end|m([1-9]|1[0-3]))$/i.test(t) || L.milestoneFrom.some(x => ifNorm(x) === ifNorm(t)));
+      if (fromRaw && !okFrom) add(T3, 'ABCDEFGH'[cFrom] + n, 'error', 'Offset from "' + fromRaw + '" is not valid. Use 0 = T, 1 … 13 = that milestone number, 99 = cycle end.');
+      if (off !== '' && !/^\d+$/.test(off)) add(T3, 'ABCDEFGH'[cOff] + n, 'error', 'Offset (days) "' + off + '" must be a whole number.');
+      if (flowDef && num > flowDef.length) add(T3, 'A' + n, 'error', 'Milestone ' + num + ' does not exist in this ops flow (it has ' + flowDef.length + ').');
+      else if (flowDef && flowDef[num - 1] && flowDef[num - 1].type === 'system') add(T3, 'A' + n, 'warn', 'Milestone ' + num + ' (' + flowDef[num - 1].label + ') is a System milestone and cannot be changed.');
+      draft.msOverrides.push({ n: num, from: fromRaw, off: off });
     });
-    if (!nm && blank) add(T3, '', 'warn', 'The milestone table is empty. The milestones come from the Ops Flow template.');
+    if (!nm) add(T3, '', 'info', 'No milestone is changed, so all milestones use the Ops Flow defaults.');
     counts.milestones = nm;
   }
 
@@ -9171,7 +9198,7 @@ function ifCheck(tabs) {
   if (!rp) add(T4, '', 'error', 'Tab not found');
   else {
     const files = ifTable(rp, 'File Type', 'If Sync by Funding', /^Legend/) || []; let ny = 0;
-    files.forEach(({ r, n }) => { const ft = col(r, 0), v = col(r, 1); if (!ft) return; if (/^(yes|y|☑)$/i.test(v)) ny++; else if (!/^(no|n|☐)$/i.test(v)) add(T4, 'B' + n, 'error', '"' + v + '" must be Yes or No for ' + ft + '.'); });
+    files.forEach(({ r, n }) => { const ft = col(r, 0), v = col(r, 1); if (!ft) return; if (/^(yes|y|☑|1)$/i.test(v)) ny++; else if (!/^(no|n|☐|2)$/i.test(v)) add(T4, 'B' + n, 'error', '"' + v + '" must be 1 (Yes) or 2 (No) for ' + ft + '.'); });
     counts.sync = ny;
   }
   return { issues, draft, counts };
@@ -9180,35 +9207,35 @@ function ifCheck(tabs) {
 /* sample forms: the same cell positions as the real template, so they go through the same reader */
 function ifSampleTabs(kind) {
   const bad = kind === 'errors', dupe = kind === 'dup';
-  const t1 = { A5: 'Region', B5: bad ? 'MY' : 'TH', A6: 'Funder Name', B6: bad ? 'TH_SPL_Allstar_ABS_01' : dupe ? 'TH_SPL_Pioneer_01' : '', A7: 'Funder Scheme', B7: 'ABS', A8: 'Product', B8: bad ? 'Personal Loan' : 'BCL',
-    A9: 'Loan Type (MY only)', B9: '', A10: 'Originator', B10: 'Seamoney', A11: 'Investor', B11: bad ? '' : 'JPM', A12: 'License (TH only)', B12: 'CCC',
-    A13: 'Supported Tenors', B13: bad ? '1M, 3M, 7M, 60M' : '1M, 2M, 3M, 6M, 12M', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
+  const t1 = { A5: 'Region', B5: bad ? 2 : 1, A6: 'Funder Name', B6: bad ? 'TH_SPL_Allstar_ABS_01' : dupe ? 'TH_SPL_Pioneer_01' : '', A7: 'Funder Scheme', B7: 1, A8: 'Product', B8: bad ? 'Personal Loan' : 1,
+    A9: 'Loan Type (MY only)', B9: '', A10: 'Originator', B10: 1, A11: 'Investor', B11: bad ? '' : 'JPM', A12: 'License (TH only)', B12: 1,
+    A13: 'Supported Tenors', B13: bad ? '1, 3, 7, 60' : '1, 2, 3, 6, 12', A16: 'SPV Name', B16: 'OceanThree', A17: 'Tranche', B17: '01',
     A20: 'Cutoff AR Task ID', B20: 'AR-2026-00123', A21: 'Cutoff AR Task Name', B21: 'Cutoff AR Task', A22: 'Cutoff AR Transify Key', B22: 'cutoff_ar_send',
     A23: 'Clawback AR Task ID', B23: 'AR-2026-00456', A24: 'Clawback AR Task Name', B24: 'Clawback AR Task', A25: 'Clawback AR Transify Key', B25: 'clawback_ar_send',
     A29: 'Last Cutoff Date', B29: bad ? '2028-09-30' : '2028-09-29', A30: 'Revolving End Date', B30: '2028-11-01', A31: 'Last Closing Date', B31: '2028-10-06',
     A32: 'Senior Amortisation Start Date', B32: bad ? '2028-12-01' : '2028-11-01', A33: 'Senior Amortisation End Date', B33: bad ? '2028-10-31' : '2030-10-01', A34: 'Final Buyback Date', B34: bad ? '2030-12-02' : '2030-10-31' };
-  const t2 = { A5: 'Pricing Mode', B5: 'Accrued Interest', A6: 'Manual Clawback Mode', B6: 'Mode A: Standard osp + accrued i', A7: 'Auto Clawback Enabled', B7: 'Yes', A8: 'Auto Clawback Mode', B8: 'Mode 1 (Accrued to Restructure Date)', A9: 'N Input (Mode 2 only)', B9: '',
+  const t2 = { A5: 'Pricing Mode', B5: 1, A6: 'Manual Clawback Mode', B6: 1, A7: 'Auto Clawback Enabled', B7: 1, A8: 'Auto Clawback Mode', B8: 1, A9: 'N Input (Mode 2 only)', B9: '',
     A11: 'B. Funder Fee Config', A12: '#', B12: 'Fee Type', C12: 'Tenor', D12: 'Target Group', E12: 'Value', F12: 'Effective Date & Time', G12: 'Updated By',
-    A13: 1, B13: 'Monthly Interest Discounted Rate', C13: '12M', D13: 'Normal User', E13: '1.5', F13: '2026-11-01 00:00',
-    A14: 2, B14: 'Monthly Interest Discounted Rate', C14: bad ? '36M' : '6M', D14: 'Normal User', E14: '1.2', F14: '2026-11-01 00:00',
+    A13: 1, B13: 2, C13: 12, D13: 'Normal User', E13: '1.5', F13: '2026-11-01 00:00',
+    A14: 2, B14: 2, C14: bad ? 36 : 6, D14: 'Normal User', E14: '1.2', F14: '2026-11-01 00:00',
     A21: 'C. Rule List', A22: 'Rule ID', B22: 'Rule Description', C22: 'Values', D22: 'Status',
-    A23: 1, B23: bad ? 'Foo bar rule' : 'Outstanding Principal in range', C23: '0.01,99999999', D23: 'Enable',
-    A24: 2, B24: bad ? 'User Current Max DPD LessEqual xx' : 'Loan Current Max DPD LessEqual xx', C24: '0', D24: 'Enable',
-    A25: 3, B25: 'Reject Loan With Refund Request', D25: 'Enable',
+    A23: 1, B23: bad ? 'Foo bar rule' : 'Outstanding Principal in range', C23: '0.01,99999999', D23: 1,
+    A24: 2, B24: bad ? 'User Current Max DPD LessEqual xx' : 'Loan Current Max DPD LessEqual xx', C24: '0', D24: 1,
+    A25: 3, B25: 'Reject Loan With Refund Request', D25: 1,
     A31: 'D. Traffic Control', A32: 'Rule ID', B32: 'Traffic Description', C32: 'Dimension', D32: 'Tenor', E32: 'Status',
-    A33: 1, B33: 'Target OS traffic control', C33: 'Target OS', D33: 'Default', E33: 'Enable',
-    A34: 2, B34: 'Target OS traffic control', C34: 'Target OS', D34: bad ? '2M' : '3M', E34: 'Enable',
-    A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 'Mil USD', A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107,
+    A33: 1, B33: 'Target OS traffic control', C33: 1, D33: 0, E33: 1,
+    A34: 2, B34: 'Target OS traffic control', C34: 1, D34: bad ? 2 : 3, E34: 1,
+    A42: 'E. Issue Size', A44: 'Issued Pool Size', B44: 145, A45: 'Currency', B45: 1, A46: 'Senior Tranche Size (USD m)', B46: bad ? 200 : 107,
     A55: 'F. Drawdown Schedule', A57: '#', B57: 'Initial Cutoff Date', C57: 'Closing Date', D57: 'Initial Reporting Date', E57: 'Amount (USD m)',
     A58: 1, B58: '2026-11-01', C58: '2026-10-15', D58: '2026-11-03', E58: 70, A59: 2, B59: bad ? '2026-10-01' : '2027-01-01', C59: '2026-12-15', D59: '2027-01-04', E59: bad ? 'abc' : 75 };
-  if (bad) { t2.A15 = 3; t2.B15 = 'Monthly Interest Discounted Rate'; t2.C15 = '12M'; t2.D15 = 'Normal User'; t2.E15 = '1.5'; t2.F15 = '2026-11-01 00:00'; }
-  const t3 = { A6: 'Template Name', B6: '', A7: 'Ops Flow', B7: bad ? 'TH ABS Net' : 'TH ABS Non Net', A9: 'Region', B9: bad ? 'Thailand (TH)' : 'Thailand (TH)',
-    A14: 'B. Cycle Segments', A15: 'Cycle #', B15: 'Start Day', C15: 'End Day',
-    A16: 1, B16: 1, C16: 5, A17: 2, B17: 6, C17: 15, A18: 3, B18: bad ? 17 : 16, C18: 25, A19: 4, B19: 26, C19: 'EOM',
-    A21: 'C. Plan Anchor Dates', A22: 'Type', A23: 'Revolving Start Date', B23: bad ? 'next Monday' : '2026-11-01',
-    A25: 'D. Milestone Configuration', A26: 'Offset Day Type', B26: 'Business Days (T)', A28: '#', B28: 'Milestone', C28: 'Type', D28: 'Offset from', E28: 'Offset (days)',
-    A29: 1, B29: bad ? '' : 'Weekly Collection Start Date', C29: 'Operation', D29: 'T (Cycle Start)', E29: bad ? '' : 1, A30: 2, B30: bad ? '' : 'Weekly Collection End Date', C30: 'Operation', D30: 'M2 Weekly Collection End Date', E30: bad ? '' : 0, A40: 'Legend' };
-  const t4 = { A16: 'Data Files & Reports', A17: 'File Type', B17: 'If Sync by Funding', A18: 'Pending Sold Loan Tape', B18: 'Yes', A19: 'Revolving Period Sale Notice', B19: 'Yes', A20: 'Servicer Report', B20: 'Yes', A27: 'Legend' };
+  if (bad) { t2.A15 = 3; t2.B15 = 2; t2.C15 = 12; t2.D15 = 'Normal User'; t2.E15 = '1.5'; t2.F15 = '2026-11-01 00:00'; }
+  const t3 = { A6: 'Template Name', B6: '', A7: 'Ops Flow', B7: bad ? 2 : 1, A9: 'Region', B9: 1,
+    A16: 'Cycle End Days', B16: bad ? '5,15,12,EOM' : '5,15,25,EOM',
+    A20: 'Revolving Start Date', B20: bad ? 'next Monday' : '2026-11-01',
+    A24: 'Offset Day Type', B24: 1, A25: 'Skip Holidays of', B25: bad ? '1,9' : '1,3',
+    A27: '#', B27: 'Milestone', C27: 'Type', D27: 'Default', E27: 'Offset from', F27: 'Offset (days)',
+    A28: 1, A29: 2, F29: bad ? 'abc' : 2, A30: 3, A38: 11, F38: bad ? 5 : '', A42: 'Legend' };
+  const t4 = { A3: 'Data Files & Reports', A4: 'File Type', B4: 'If Sync by Funding', A5: 'Pending Sold Loan Tape', B5: 1, A6: 'Revolving Period Sale Notice', B6: 1, A7: 'Servicer Report', B7: 1, A14: 'Legend' };
   return { basic: ifCellsToRows(t1), port: ifCellsToRows(t2), plan: ifCellsToRows(t3), report: ifCellsToRows(t4) };
 }
 
@@ -9242,7 +9269,7 @@ function ifRender() {
     body.innerHTML = `<div class="if-drop" id="if-drop" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="event.preventDefault();this.classList.remove('over');ifFile(event.dataTransfer.files[0])">
         <svg width="34" height="34" fill="none" stroke="#94A3B8" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div style="font-size:14px;font-weight:600;color:#111827;margin-top:8px;">Drop the filled form here</div>
-        <div style="font-size:12px;color:#6B7280;margin:4px 0 14px;">ABS Funder Onboarding Form (.xlsx). Tabs 1 to 4 are read. The PM配置 tab is ignored.</div>
+        <div style="font-size:12px;color:#6B7280;margin:4px 0 14px;">ABS Funder Onboarding Form (.xlsx). Tabs 1 to 4 are read. Type the numbers shown in the Notes column and the Field Map tab. The Field Map and PM配置 tabs are ignored.</div>
         <button class="btn-primary" onclick="document.getElementById('if-file').click()">Choose file</button>
         <input type="file" id="if-file" accept=".xlsx" style="display:none" onchange="ifFile(this.files[0])" />
       </div>
