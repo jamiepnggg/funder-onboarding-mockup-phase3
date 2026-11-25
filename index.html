@@ -9592,7 +9592,7 @@ const rbFundersOf = flow => RB_FUNDERS.filter(f => f.flow === flow);
 let rbFilter = RB_FUNDERS.map(f => f.k);   // funders shown in the preview
 let rbFlowF = 'all', rbTE = 'all';         // Notif Config filters: ops flow, target event
 /* Who is tagged lives on the milestone: the PIC column of the ops flow's Milestone Configuration (emails, SeaTalk finds each person).
-   Life cycle milestones are not in an ops flow, so their PIC is set on the config itself (r.pic). */
+   Life cycle milestones are not in an ops flow, so they tag @all. */
 let rbCfgPic = [];
 function rbColOf(flow, k) {
   const t = k.split(':')[0], rest = k.slice(t.length + 1);
@@ -9690,9 +9690,9 @@ RB_RULES.forEach(r => { r.cfg = 10 + r.id; });
 })();   // Config ID shown in Notif Config (5, 6 are the existing pending approval configs)
 const rbNextCfg = () => Math.max(10, ...RB_RULES.map(r => r.cfg)) + 1;
 let rbSel = 17;
-/* everyone who is tagged: the milestone's PIC emails (ops flow Milestone Configuration), or the config's own PIC for Life cycle milestones */
+/* everyone who is tagged: the milestone's PIC emails (ops flow Milestone Configuration); Life cycle milestones tag @all */
 const rbPicOf = r => { const c = rbColOf(r.flow, r.ms); return c ? (c.pic || []) : (r.pic || []); };
-const rbTags = r => { const p = rbPicOf(r); return p.length ? p.map(e => '@' + e.split('@')[0]).join(' ') : '(no PIC set)'; };
+const rbTags = r => { if (!rbColOf(r.flow, r.ms)) return '@all'; const p = rbPicOf(r); return p.length ? p.map(e => '@' + e.split('@')[0]).join(' ') : '(no PIC set)'; };   // Life cycle milestones tag @all
 const rbLeadN = n => n ? n + ' business day' + (n > 1 ? 's' : '') + ' before' : 'Same day';
 const rbLead = id => RB_LEADS.find(l => l.id === id) || { id: id, n: 0, time: '09:00' };
 const rbLeadText = l => rbLeadN(l.n) + ' · ' + l.time;
@@ -9743,12 +9743,12 @@ function rbModalHint() {
   el.textContent = 'Runs during: ' + wins.join(', ') + ' (from the funder\'s Life cycle dates)' + (n > 1 ? '. These ' + n + ' milestones share this one config.' : '');
 }
 let rbEdit = null, rbIsEdit = false;
-/* "Who is tagged" in the config modal: read-only for ops flow milestones (set in the PIC column), editable for Life cycle ones */
+/* "Who is tagged" in the config modal: ops flow milestones take their PIC from the table (nothing to show); Life cycle ones tag @all */
 function rbTagInfo() {
   const el = document.getElementById('rb-f-owners'), grp = document.getElementById('rb-g-owners'); if (!el) return;
   const free = rbMsSel.filter(k => !rbColOf(rbMsFlow, k));
   grp.style.display = free.length ? '' : 'none';   // ops flow milestones take their PIC from the table, so nothing to show
-  el.innerHTML = free.length ? `<div style="font-size:12.5px;color:#374151;margin-bottom:5px;">${free.map(k => '<b>' + rbMs(k).name + '</b>').join(', ')} ${free.length > 1 ? 'are' : 'is'} not in an ops flow table, so enter who to tag here.</div><div class="pic-cell" id="pic-cfg-0">${picInner('cfg', 0)}</div>` : '';
+  el.innerHTML = free.length ? `<div style="font-size:12.5px;color:#374151;margin-bottom:5px;">${free.map(k => '<b>' + rbMs(k).name + '</b>').join(', ')} ${free.length > 1 ? 'are' : 'is'} not in an ops flow table, so the reminder tags <b>@all</b>. No PIC to enter.</div>` : '';
 }
 const rbLeadChk = (l, on) => `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="rb-f-lead" value="${l.id}"${on ? ' checked' : ''}> ${rbLeadText(l)}</label>`;
 let rbMsSel = [], rbMsFlow = 'abs', rbMsAct = '';
@@ -9843,7 +9843,6 @@ function rbSave() {
   if (!rbMsSel.length) return err('Select at least one milestone.');
   const picked = [...document.querySelectorAll('.rb-f-fund:checked')].map(e => e.value);
   if (!picked.length) return err('Tick at least one funder.');
-  if (rbMsSel.some(k => !rbColOf(flow, k)) && !rbCfgPic.length) return err('Add at least one PIC email for the Life cycle milestone.');
   const leads = [...document.querySelectorAll('.rb-f-lead:checked')].map(e => parseInt(e.value, 10));
   if (!leads.length) return err('Tick at least one daily reminder.');
   const sel = rbMsSel.slice();
@@ -9852,7 +9851,7 @@ function rbSave() {
   const base = { flow: flow, funders: picked.length === rbFundersOf(flow).length ? [] : picked, leads: leads, on: true };
   const cfg = rbEdit !== null ? rbEdit : rbNextCfg();
   if (rbEdit !== null) RB_RULES = RB_RULES.filter(r => r.cfg !== rbEdit);
-  sel.forEach(k => RB_RULES.push(Object.assign({ id: Math.max(0, ...RB_RULES.map(r => r.id)) + 1, cfg: cfg, ms: k }, base, rbColOf(flow, k) ? {} : { pic: rbCfgPic.slice() })));
+  sel.forEach(k => RB_RULES.push(Object.assign({ id: Math.max(0, ...RB_RULES.map(r => r.id)) + 1, cfg: cfg, ms: k }, base)));
   rbClose(); rbRenderRules(); rbPreview(); rbToast('✓ Milestone Reminder config saved');
 }
 /* the day a reminder is sent: `days` business days before the milestone (weekends skipped) */
